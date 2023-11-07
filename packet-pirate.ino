@@ -10,11 +10,21 @@ struct Network
   String ssid;
   wifi_auth_mode_t authMode;
   int rssi;
-
-  Network(String ssid, wifi_auth_mode_t authMode, int rssi);
 };
 
+enum OperationMode
+{
+  ScanMode,
+  UploadMode
+};
+
+OperationMode getMode();
 void scanNetworks();
+void clearNetworks();
+void uploadNetworks();
+
+Network* g_networksArray = nullptr;
+int g_networksCount = -1;
 
 void setup() 
 {
@@ -33,5 +43,12 @@ void setup()
 
 void loop() 
 {
-  scanNetworks();
+  switch(getMode())
+  {
+    case OperationMode::ScanMode:
+      scanNetworks();
+      break;
+    case OperationMode::UploadMode:
+      uploadNetworks();
+  }
 }
