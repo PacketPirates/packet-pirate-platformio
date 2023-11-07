@@ -6,16 +6,31 @@ const int IR_REC = 12;
 // Function/struct declarations
 struct Network
 {
+  // Fill with vulnerabilities from our future attack
+  enum Vulnerabilities
+  {
+    Placeholder,
+    Temp
+  };
+
+  // Identifying info
   int id;
   String ssid;
   wifi_auth_mode_t authMode;
   int rssi;
+
+  // List to be uploaded to db
+  int vulnerabilitiesCount;
+  Vulnerabilities* vulnerabilities;
 };
 
 enum OperationMode
 {
   ScanMode,
-  UploadMode
+  UploadMode,
+  TestMode,
+  IRScan,
+  IRBroadcast
 };
 
 OperationMode getMode();
@@ -25,6 +40,8 @@ void uploadNetworks();
 
 Network* g_networksArray = nullptr;
 int g_networksCount = -1;
+int g_tick = 0;
+int g_savedTick = 0;
 
 void setup() 
 {
@@ -51,4 +68,5 @@ void loop()
     case OperationMode::UploadMode:
       uploadNetworks();
   }
+  g_tick++;
 }
