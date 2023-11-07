@@ -13,7 +13,6 @@ void scanNetworks() {
       g_networksArray[i].ssid = WiFi.SSID(i);
       g_networksArray[i].rssi = WiFi.RSSI(i);
       g_networksArray[i].id = i;
-      delay(50);
     }
   } else {
     Serial.println("No networks found.");
@@ -50,5 +49,16 @@ void clearNetworks()
 
 OperationMode getMode()
 {
+  bool uploadBtn = (bool) digitalRead(MODE_BTN);
+  Serial.print("Btn: "); Serial.println(uploadBtn);
+
+  // Each scan tick takes about 6 seconds to complete,
+  // so let it run for about 2 minutes before trying to upload
+  // automatically
+  if ((g_tick - g_savedTick > 20 && g_previousMode == OperationMode::ScanMode) || uploadBtn)
+    return OperationMode::UploadMode;
+  else if (g_previousMode != OperationMode::ScanMode)
+    return OperationMode::HoldMode;
+
   return OperationMode::ScanMode;
 }
