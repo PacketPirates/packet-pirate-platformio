@@ -36,21 +36,41 @@ enum OperationMode
 };
 
 OperationMode getMode();
+
 void scanNetworks();
 void clearNetworks();
+
 void uploadNetworks();
 
+void irScan();
+void irBroadcast();
+void setIrPattern(int length, bool* pattern);
+
+// Scanned network info
 Network* g_networksArray = nullptr;
 int g_networksCount = -1;
-int g_tick = 0;
-int g_savedTick = 0;
+
+// For mode operation
+unsigned int g_tick = 0;
+unsigned int g_savedTick = 0;
 OperationMode g_previousMode;
+
+// Ir pattern variables
+bool* g_irPattern = nullptr;
+int g_irLength = 0;
+int g_irStart = -1;
 
 void setup() 
 {
   pinMode(IR_LED, OUTPUT);
   pinMode(IR_REC, INPUT);
   pinMode(MODE_BTN, INPUT);
+  
+  // TODO REMOVE WHEN CLOUD IR ADDED
+  // SCAN
+  pinMode(32, INPUT);
+  // BROADCAST
+  pinMode(35, INPUT);
   
   Serial.begin(115200);
 
@@ -60,6 +80,9 @@ void setup()
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
   delay(1000);
+
+  // Start by scanning networks
+  scanNetworks();
 }
 
 void loop() 
@@ -71,15 +94,23 @@ void loop()
       scanNetworks();
       break;
     case OperationMode::UploadMode:
+      g_tick = 0;
       g_savedTick = g_tick;
       uploadNetworks();
       break;
+    case OperationMode::IRScan:
+      g_irLength = 5000;
+      irScan();
+      break;
+    case OperationMode::IRBroadcast:
+      irBroadcast();
+      break;
     case OperationMode::HoldMode:
+    default:
       delay(100);
       break;
   }
 
   g_previousMode = mode;
-  Serial.print("Tick: "); Serial.println(g_tick);
   g_tick++;
 }
