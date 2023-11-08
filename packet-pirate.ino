@@ -114,3 +114,29 @@ void loop()
   g_previousMode = mode;
   g_tick++;
 }
+
+OperationMode getMode()
+{
+  bool uploadBtn = (bool) digitalRead(MODE_BTN); 
+
+  bool irScan = (bool) digitalRead(32);
+  bool irBroadcast = (bool) digitalRead(35);
+  bool inIrRange = g_tick < g_irStart + g_irLength;
+
+  // Scanning and broadcasting need to be run continuously so check their conditions first
+  if (irScan || (g_previousMode == OperationMode::IRScan && inIrRange))
+    return OperationMode::IRScan;
+  else if (irBroadcast || (g_previousMode == OperationMode::IRBroadcast && inIrRange))
+    return OperationMode::IRBroadcast;
+  
+  // Each scan tick takes about 6 seconds to complete,
+  // so let it run for about 2 minutes before trying to upload
+  // automatically    
+  else if ((g_tick - g_savedTick > 20 && g_previousMode == OperationMode::ScanMode) || uploadBtn)
+    return OperationMode::UploadMode;
+  else if (g_previousMode != OperationMode::ScanMode)
+    return OperationMode::HoldMode;
+
+  // Default return for the time being
+  return OperationMode::ScanMode;
+}
