@@ -1,3 +1,8 @@
+#include <Arduino.h>
+#include <WiFi.h>
+
+#include "defs.h"
+
 void scanNetworks() {
   Serial.println("Scanning networks...");
   int nets = WiFi.scanNetworks();

@@ -1,67 +1,40 @@
+#include <Arduino.h>
+#include <FirebaseESP32.h>
 #include <WiFi.h>
 
-const int IR_LED = 15;
-const int IR_REC = 12;
-const int MODE_BTN = 27;
+#include "defs.h"
 
-// Function/struct declarations
-struct Network
-{
-  // Fill with vulnerabilities from our future attack
-  enum Vulnerabilities
-  {
-    Placeholder,
-    Temp
-  };
-
-  // Identifying info
-  int id;
-  String ssid;
-  wifi_auth_mode_t authMode;
-  int rssi;
-
-  // List to be uploaded to db
-  int vulnerabilitiesCount;
-  Vulnerabilities* vulnerabilities;
-};
-
-enum OperationMode
-{
-  ScanMode,
-  UploadMode,
-  TestMode,
-  HoldMode,
-  IRScan,
-  IRBroadcast
-};
-
-OperationMode getMode();
-
-void scanNetworks();
-void clearNetworks();
-
-void uploadNetworks();
-
-void irScan();
-void irBroadcast();
-void setIrPattern(int length, bool* pattern);
-
+// Define globals specified in defs.h
 // Scanned network info
-Network* g_networksArray = nullptr;
-int g_networksCount = -1;
+Network* g_networksArray;
+int g_networksCount;
 
 // For mode operation
-unsigned int g_tick = 0;
-unsigned int g_savedTick = 0;
+unsigned int g_tick;
+unsigned int g_savedTick;
 OperationMode g_previousMode;
 
 // Ir pattern variables
-bool* g_irPattern = nullptr;
-int g_irLength = 0;
-int g_irStart = -1;
+bool* g_irPattern;
+int g_irLength;
+int g_irStart;
 
 void setup() 
 {
+  // Scanned network info
+  g_networksArray = nullptr;
+  g_networksCount = -1;
+
+  // For mode operation
+  g_tick = 0;
+  g_savedTick = 0;
+  g_previousMode;
+
+  // Ir pattern variables
+  g_irPattern = nullptr;
+  g_irLength = 0;
+  g_irStart = -1;
+
   pinMode(IR_LED, OUTPUT);
   pinMode(IR_REC, INPUT);
   pinMode(MODE_BTN, INPUT);
@@ -80,6 +53,8 @@ void setup()
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
   delay(1000);
+
+  firebaseSetup();
 
   // Start by scanning networks
   scanNetworks();

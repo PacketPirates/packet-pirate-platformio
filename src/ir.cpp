@@ -1,3 +1,7 @@
+#include <Arduino.h>
+
+#include "defs.h"
+
 void irScan()
 {
   if (g_irStart == -1)
