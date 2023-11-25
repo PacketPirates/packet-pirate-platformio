@@ -17,7 +17,6 @@ OperationMode g_previousMode;
 // Ir pattern variables
 bool* g_irPattern;
 int g_irLength;
-int g_irStart;
 
 void setup() 
 {
@@ -33,7 +32,6 @@ void setup()
   // Ir pattern variables
   g_irPattern = nullptr;
   g_irLength = 0;
-  g_irStart = -1;
 
   pinMode(IR_LED, OUTPUT);
   pinMode(IR_REC, INPUT);
@@ -96,14 +94,14 @@ OperationMode getMode()
 
   bool irScan = (bool) digitalRead(32);
   bool irBroadcast = (bool) digitalRead(35);
-  bool inIrRange = g_tick < g_irStart + g_irLength;
+  // TODO Remove debug print here
+  // Serial.print("Scan: ");Serial.print(irScan);Serial.print("Broadcast: ");Serial.println(irBroadcast);
 
-  // Scanning and broadcasting need to be run continuously so check their conditions first
-  if (irScan || (g_previousMode == OperationMode::IRScan && inIrRange))
+  if (irScan)
     return OperationMode::IRScan;
-  else if (irBroadcast || (g_previousMode == OperationMode::IRBroadcast && inIrRange))
+  else if (irBroadcast)
     return OperationMode::IRBroadcast;
-  
+
   // Each scan tick takes about 6 seconds to complete,
   // so let it run for about 2 minutes before trying to upload
   // automatically    

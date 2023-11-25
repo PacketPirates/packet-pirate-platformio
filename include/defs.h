@@ -49,6 +49,7 @@ void uploadNetworks();
 
 void irScan();
 void irBroadcast();
+void trimIrScan();
 void setIrPattern(int length, bool* pattern);
 
 // Scanned network info
@@ -63,7 +64,6 @@ extern OperationMode g_previousMode;
 // Ir pattern variables
 extern bool* g_irPattern;
 extern int g_irLength;
-extern int g_irStart;
 
 // Firebase stuff
 void firebaseSetup();

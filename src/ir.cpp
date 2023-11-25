@@ -4,56 +4,83 @@
 
 void irScan()
 {
-  if (g_irStart == -1)
-  {
-    g_irStart = g_tick;
-    
-    // Reset pattern
-    if (g_irPattern)
-      delete[] g_irPattern;
+  // Reset pattern
+  if (g_irPattern)
+    delete[] g_irPattern;
 
-    g_irPattern = new bool[g_irLength];
+  g_irPattern = new bool[g_irLength];
+
+  for (int i = 0; i < g_irLength; i++)
+  {
+    bool irInput = (bool) digitalRead(MODE_BTN);
+    Serial.print("Scanning ir["); Serial.print(i); Serial.print("]: "); Serial.println(irInput);
+    g_irPattern[i] = irInput;
+    delay(1);
   }
 
-  if (g_tick - g_irStart >= g_irLength)
-  {
-    Serial.println("ERROR: SOMETHING HAS GONE HORRIBLY WRONG AND WE ARE TRYING TO SCAN OUT OF IR SCAN RANGE");
-    return;
-  }
-
-  bool irInput = (bool) digitalRead(MODE_BTN);
-
-  Serial.print("Scanning ir["); Serial.print(g_tick - g_irStart); Serial.print("]: "); Serial.println(irInput);
-
-  g_irPattern[g_tick - g_irStart] = irInput;
-
-  // End scan but leave pattern in place
-  if (g_tick == g_irStart + g_irLength - 1)
-    g_irStart = -1;
+  trimIrScan();
 }
 
 void irBroadcast()
 {
-  if (g_irStart == -1)
+  if (!g_irPattern || g_irLength == -1)
   {
-    if (!g_irPattern || g_irLength == -1)
-    {
-      Serial.println("ERROR: Unable to broadcast IR without pattern.") ;
-      return;
-    }
-
-    g_irStart = g_tick;
+    Serial.println("ERROR: Unable to broadcast IR without pattern.") ;
+    return;
   }
 
-  Serial.print("Broadcasting: "); Serial.println(g_irPattern[g_tick - g_irStart]);
-  digitalWrite(IR_LED, (int) g_irPattern[g_tick - g_irStart]);
+  for (int i = 0; i < g_irLength; i++)
+  {
+    Serial.print("Broadcasting: "); Serial.println(g_irPattern[i]);
+    digitalWrite(IR_LED, (int) g_irPattern[i]);
+    delay(1);
+  }  
 
   // End broadcast
-  if (g_tick == g_irStart + g_irLength - 1)
+  digitalWrite(IR_LED, 0);
+}
+
+void trimIrScan()
+{
+  Serial.println("Trimming IR pattern...");
+  int init = -1;
+  for (int i = 0; i < g_irLength; i++)
   {
-    g_irStart = -1;
-    digitalWrite(IR_LED, 0);
+    if (g_irPattern[i])
+    {
+      init = i;
+      break;
+    }
   }
+
+  if (init == -1)
+  {
+    Serial.println("Pattern empty! Resetting array.");
+    delete[] g_irPattern;
+    g_irLength = -1;
+  }
+
+  int end = -1;
+  for (int i = g_irLength - 1; i >= 0; i--)
+  {
+    if (g_irPattern[i])
+    {
+      end = i;
+      break;
+    }
+  }
+
+  int newLen = end - init + 1;
+  bool* tempArr = new bool[newLen];
+  for (int i = 0; i < newLen; i++)
+  {
+    tempArr[i] = g_irPattern[i + init];
+  }
+
+  delete[] g_irPattern;
+  g_irPattern = tempArr;
+  Serial.print("Pattern sliced from size ");Serial.print(g_irLength);Serial.print("to size ");Serial.println(newLen);
+  g_irLength = newLen;
 }
 
 void setIrPattern(int length, bool* pattern)
