@@ -4,6 +4,8 @@
 
 void irScan()
 {
+  Serial.println("Scanning IR...");
+
   // Reset pattern
   if (g_irPattern)
     delete[] g_irPattern;
@@ -12,8 +14,8 @@ void irScan()
 
   for (int i = 0; i < g_irLength; i++)
   {
-    bool irInput = (bool) digitalRead(MODE_BTN);
-    Serial.print("Scanning ir["); Serial.print(i); Serial.print("]: "); Serial.println(irInput);
+    bool irInput = !((bool) digitalRead(IR_REC));
+    //Serial.print("Scanning ir["); Serial.print(i); Serial.print("]: "); Serial.println(irInput);
     g_irPattern[i] = irInput;
     delay(1);
   }
@@ -23,6 +25,8 @@ void irScan()
 
 void irBroadcast()
 {
+  Serial.println("Broadcasting IR...");
+
   if (!g_irPattern || g_irLength == -1)
   {
     Serial.println("ERROR: Unable to broadcast IR without pattern.") ;
@@ -31,7 +35,7 @@ void irBroadcast()
 
   for (int i = 0; i < g_irLength; i++)
   {
-    Serial.print("Broadcasting: "); Serial.println(g_irPattern[i]);
+    //Serial.print("Broadcasting: "); Serial.println(g_irPattern[i]);
     digitalWrite(IR_LED, (int) g_irPattern[i]);
     delay(1);
   }  
@@ -58,6 +62,7 @@ void trimIrScan()
     Serial.println("Pattern empty! Resetting array.");
     delete[] g_irPattern;
     g_irLength = -1;
+    return;
   }
 
   int end = -1;

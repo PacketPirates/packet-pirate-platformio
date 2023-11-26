@@ -51,3 +51,31 @@ void clearNetworks()
     g_networksCount = -1;
   }
 }
+
+void connectWifi()
+{
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to WiFi ");
+  while (WiFi.status() != WL_CONNECTED){
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println();
+  Serial.print("Connected with IP: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
+
+  g_wifiConnected = true;
+
+  if (!Firebase.signUp(&g_firebaseConfig, &g_firebaseAuth, "", ""))
+    Serial.println("ERROR ESTABLISHING FIREBASE AUTH");
+
+  Firebase.begin(&g_firebaseConfig, &g_firebaseAuth);
+}
+
+void disconnectWifi()
+{
+  Serial.println("Disconnecting...");
+  g_wifiConnected = false;
+  WiFi.disconnect();
+}

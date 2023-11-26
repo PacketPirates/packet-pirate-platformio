@@ -8,10 +8,10 @@
 // Scanned network info
 Network* g_networksArray;
 int g_networksCount;
+bool g_wifiConnected;
 
 // For mode operation
 unsigned int g_tick;
-unsigned int g_savedTick;
 OperationMode g_previousMode;
 
 // Ir pattern variables
@@ -23,10 +23,10 @@ void setup()
   // Scanned network info
   g_networksArray = nullptr;
   g_networksCount = -1;
+  g_wifiConnected = false;
 
   // For mode operation
   g_tick = 0;
-  g_savedTick = 0;
   g_previousMode;
 
   // Ir pattern variables
@@ -56,6 +56,7 @@ void setup()
 
   // Start by scanning networks
   scanNetworks();
+  uploadNetworks();
 }
 
 void loop() 
@@ -64,15 +65,15 @@ void loop()
   switch(mode)
   {
     case OperationMode::ScanMode:
+      if (g_wifiConnected)
+        disconnectWifi();
       scanNetworks();
-      break;
-    case OperationMode::UploadMode:
-      g_tick = 0;
-      g_savedTick = g_tick;
+      // Not sure if this delay is necessary but better safe than sorry re: fb rate limiting
+      delay(5000);
       uploadNetworks();
       break;
     case OperationMode::IRScan:
-      g_irLength = 5000;
+      g_irLength = IR_DEFAULT_LENGTH;
       irScan();
       break;
     case OperationMode::IRBroadcast:
@@ -81,8 +82,17 @@ void loop()
     case OperationMode::HoldMode:
     default:
       delay(100);
-      break;
   }
+
+  Serial.println("Delaying for 6 seconds...");
+  delay(6000);
+  Serial.println("Delay complete");
+
+  if (!g_wifiConnected)
+    connectWifi();
+
+  Serial.print("Unswitching mode: ");Serial.println(mode);
+  unswitchMode(mode);
 
   g_previousMode = mode;
   g_tick++;
@@ -92,8 +102,15 @@ OperationMode getMode()
 {
   bool uploadBtn = (bool) digitalRead(MODE_BTN); 
 
-  bool irScan = (bool) digitalRead(32);
-  bool irBroadcast = (bool) digitalRead(35);
+  if (!g_wifiConnected)
+    connectWifi();
+
+  Serial.println("getting from firebase db");
+  bool irScan = fbGetIr();
+  bool irBroadcast = fbGetBroadcast();
+  bool rescan = fbGetRescan();
+
+  Serial.print("s: ");Serial.print(irScan);Serial.print("b: ");Serial.print(irBroadcast);Serial.print("rs: ");Serial.println(rescan);
   // TODO Remove debug print here
   // Serial.print("Scan: ");Serial.print(irScan);Serial.print("Broadcast: ");Serial.println(irBroadcast);
 
@@ -101,15 +118,8 @@ OperationMode getMode()
     return OperationMode::IRScan;
   else if (irBroadcast)
     return OperationMode::IRBroadcast;
+  else if (rescan)
+    return OperationMode::ScanMode;
 
-  // Each scan tick takes about 6 seconds to complete,
-  // so let it run for about 2 minutes before trying to upload
-  // automatically    
-  else if ((g_tick - g_savedTick > 20 && g_previousMode == OperationMode::ScanMode) || uploadBtn)
-    return OperationMode::UploadMode;
-  else if (g_previousMode != OperationMode::ScanMode)
-    return OperationMode::HoldMode;
-
-  // Default return for the time being
-  return OperationMode::ScanMode;
+  return OperationMode::HoldMode;
 }
