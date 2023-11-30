@@ -60,9 +60,12 @@ void registerDevice()
   if (!g_wifiConnected)
     connectWifi();
 
+  String macAddr = WiFi.macAddress();
+
   String registrationURL = "";
   registrationURL.concat(WEBSERVER_ENDPOINT);
-  registrationURL.concat("/register-device");
+  registrationURL.concat("/register-device?mac=");
+  registrationURL.concat(macAddr);
 
   g_deviceId = "";
 

@@ -11,8 +11,9 @@ def root_path():
 @app.route("/register-device")
 def register_device():
     if request.method == 'GET':
+        mac = request.args.get('mac')
         device_id = "FDS234"
-        print(f"Giving new device id: {device_id}")
+        print(f"Giving new device with MAC address {mac} id: {device_id}")
         return {'id': device_id}
 
 
@@ -20,7 +21,7 @@ def register_device():
 def mode():
     if request.method == 'GET':
         print(f"Getting mode for device with id: {request.args.get('device-id')}")
-        return {'ir': True, 'broadcast': False, 'rescan': False}
+        return {'ir': False, 'broadcast': False, 'rescan': False}
 
 
 @app.route("/unswitch", methods=['POST'])
