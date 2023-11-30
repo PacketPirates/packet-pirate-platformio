@@ -94,6 +94,17 @@ void registerDevice()
     {
       JSONVar parsed = JSONVar::parse(payload);
       g_deviceId = JSON.stringify(parsed["id"]);
+      
+      // Why do this after stringify you ask?
+      // Because string comparisons are easy! And this JSON library is not!
+      if (g_deviceId == "null")
+      {
+        Serial.println("Unable to get device id. Retrying in 2 seconds...");
+        g_deviceId = "";
+        delay(2000);
+        continue;
+      }
+
       Serial.print("Assigned device id: "); Serial.println(g_deviceId);
     }      
   }
