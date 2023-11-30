@@ -61,6 +61,7 @@ void trimIrScan()
   {
     Serial.println("Pattern empty! Resetting array.");
     delete[] g_irPattern;
+    g_irPattern = nullptr;
     g_irLength = -1;
     return;
   }
