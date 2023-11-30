@@ -4,6 +4,8 @@
 
 #include "defs.h"
 
+String g_deviceId;
+
 void scanNetworks() {
   Serial.println("Scanning networks...");
   int nets = WiFi.scanNetworks();
@@ -53,6 +55,50 @@ void clearNetworks()
   }
 }
 
+void registerDevice()
+{
+  if (!g_wifiConnected)
+    connectWifi();
+
+  String registrationURL = "";
+  registrationURL.concat(WEBSERVER_ENDPOINT);
+  registrationURL.concat("/register-device");
+
+  g_deviceId = "";
+
+  while (g_deviceId == "")
+  {
+    WiFiClient client;
+    HTTPClient http;
+      
+    http.begin(client, registrationURL.c_str());
+        
+    // Send HTTP POST request
+    int httpResponseCode = http.GET();
+    
+    String payload = "{}"; 
+    
+    if (httpResponseCode>0) {
+      Serial.print("HTTP Response code: ");
+      Serial.println(httpResponseCode);
+      payload = http.getString();
+    }
+    else {
+      Serial.print("Error code: ");
+      Serial.println(httpResponseCode);
+    }
+    // Free resources
+    http.end();
+
+    if (payload != "{}")
+    {
+      JSONVar parsed = JSONVar::parse(payload);
+      g_deviceId = JSON.stringify(parsed["id"]);
+      Serial.print("Assigned device id: "); Serial.println(g_deviceId);
+    }      
+  }
+}
+
 void connectWifi()
 {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -76,13 +122,16 @@ void disconnectWifi()
   WiFi.disconnect();
 }
 
-String httpGETRequest(const char* server)
+String httpGETRequest(String server)
 {
   WiFiClient client;
   HTTPClient http;
+
+  server.concat("?device-id=");
+  server.concat(g_deviceId);
     
   // Your Domain name with URL path or IP address with path
-  http.begin(client, server);
+  http.begin(client, server.c_str());
   Serial.print("Making GET request to "); Serial.println(server);
   
   // If you need Node-RED/server authentication, insert user and password below
@@ -108,13 +157,16 @@ String httpGETRequest(const char* server)
   return payload;
 }
 
-String httpPOSTRequest(const char* server, const char* string, bool json)
+String httpPOSTRequest(String server, const char* string, bool json)
 {
   WiFiClient client;
   HTTPClient http;
+
+  server.concat("?device-id=");
+  server.concat(g_deviceId);
     
   // Your Domain name with URL path or IP address with path
-  http.begin(client, server);
+  http.begin(client, server.c_str());
   Serial.print("Making POST request to "); Serial.println(server);
   
   if (json)

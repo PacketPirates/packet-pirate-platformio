@@ -45,12 +45,13 @@ void clearNetworks();
 void connectWifi();
 void disconnectWifi();
 
+void registerDevice();
 void uploadNetworks();
 void unswitchMode(OperationMode mode);
 JSONVar getModeFromWebserver();
 
-String httpGETRequest(const char* server);
-String httpPOSTRequest(const char* server, const char* string, bool json);
+String httpGETRequest(String server);
+String httpPOSTRequest(String server, const char* string, bool json);
 
 void irScan();
 void irBroadcast();
@@ -62,6 +63,8 @@ extern Network* g_networksArray;
 extern int g_networksCount;
 
 extern bool g_wifiConnected;
+
+extern String g_deviceId;
 
 // For mode operation
 extern unsigned int g_tick;

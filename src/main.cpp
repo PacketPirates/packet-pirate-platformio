@@ -54,6 +54,7 @@ void setup()
 
   // Start by scanning networks
   scanNetworks();
+  registerDevice();
   uploadNetworks();
 }
 

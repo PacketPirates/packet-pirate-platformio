@@ -8,17 +8,25 @@ def root_path():
     return "<p>Please use a GET or POST request on the proper endpoints!</p>"
 
 
+@app.route("/register-device")
+def register_device():
+    if request.method == 'GET':
+        device_id = "FDS234"
+        print(f"Giving new device id: {device_id}")
+        return {'id': device_id}
+
+
 @app.route("/mode", methods=['GET'])
 def mode():
     if request.method == 'GET':
-        print("Getting mode")
+        print(f"Getting mode for device with id: {request.args.get('device-id')}")
         return {'ir': True, 'broadcast': False, 'rescan': False}
 
 
 @app.route("/unswitch", methods=['POST'])
 def unswitch():
     if request.method == 'POST':
-        print('Unswitching')
+        print(f'Unswitching for device with id: {request.args.get("device-id")}')
         print(request.data.decode('utf-8'))
         return "DONE"
     
@@ -26,6 +34,7 @@ def unswitch():
 @app.route("/upload", methods=['POST'])
 def upload():
     if request.method == 'POST':
-        print('Got upload json:')
+        print(f'Got {request.args.get("device-id")}\'s upload json:')
         print(request.data.decode('utf-8'))
+        
         return "DONE"

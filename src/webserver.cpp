@@ -26,7 +26,7 @@ void uploadNetworks() {
   String upPath = "";
   upPath.concat(WEBSERVER_ENDPOINT);
   upPath.concat("/upload");
-  String serverReturn = httpPOSTRequest(upPath.c_str(), json.c_str( ), true);
+  String serverReturn = httpPOSTRequest(upPath, json.c_str( ), true);
 }
 
 void unswitchMode(OperationMode mode)
@@ -53,7 +53,7 @@ void unswitchMode(OperationMode mode)
   String modePath = "";
   modePath.concat(WEBSERVER_ENDPOINT);
   modePath.concat("/unswitch");
-  String serverReturn = httpPOSTRequest(modePath.c_str(), id.c_str(), false);
+  String serverReturn = httpPOSTRequest(modePath, id.c_str(), false);
 }
 
 JSONVar getModeFromWebserver()
@@ -64,7 +64,7 @@ JSONVar getModeFromWebserver()
   String modePath = "";
   modePath.concat(WEBSERVER_ENDPOINT);
   modePath.concat("/mode");
-  String serverReturn = httpGETRequest(modePath.c_str());
+  String serverReturn = httpGETRequest(modePath);
 
   if (serverReturn != "{}")
     return JSON.parse(serverReturn);
