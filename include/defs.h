@@ -2,7 +2,7 @@
 #define DEFS
 
 #include <Arduino.h>
-#include <FirebaseESP32.h>
+#include <Arduino_JSON.h>
 #include <WiFi.h>
 
 // Function/struct declarations
@@ -47,10 +47,10 @@ void disconnectWifi();
 
 void uploadNetworks();
 void unswitchMode(OperationMode mode);
-bool fbGetIr();
-bool fbGetBroadcast();
-bool fbGetRescan();
-int fbGetTest();
+JSONVar getModeFromWebserver();
+
+String httpGETRequest(const char* server);
+String httpPOSTRequest(const char* server, const char* string, bool json);
 
 void irScan();
 void irBroadcast();
@@ -71,18 +71,9 @@ extern OperationMode g_previousMode;
 extern bool* g_irPattern;
 extern int g_irLength;
 
-// Firebase stuff
-void firebaseSetup();
-
-extern FirebaseData g_firebaseData;
-extern FirebaseAuth g_firebaseAuth;
-extern FirebaseConfig g_firebaseConfig;
-
 // Secrets... we should figure out how to do this without defines
 #define WIFI_SSID ""
-#define WIFI_PASSWORD ""
-#define API_KEY ""
-#define DATABASE_URL ""
+#define WIFI_PASSWORD""
 
 // Pinouts
 #define IR_LED 15
@@ -90,6 +81,8 @@ extern FirebaseConfig g_firebaseConfig;
 #define MODE_BTN 27
 
 #define IR_DEFAULT_LENGTH 5000
+
+#define WEBSERVER_ENDPOINT ""
 
 #define MODE_IR_SCAN "modes/ir" 
 #define MODE_BROADCAST "modes/broadcast"

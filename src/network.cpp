@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <HTTPClient.h>
 #include <WiFi.h>
 
 #include "defs.h"
@@ -66,11 +67,6 @@ void connectWifi()
   Serial.println();
 
   g_wifiConnected = true;
-
-  if (!Firebase.signUp(&g_firebaseConfig, &g_firebaseAuth, "", ""))
-    Serial.println("ERROR ESTABLISHING FIREBASE AUTH");
-
-  Firebase.begin(&g_firebaseConfig, &g_firebaseAuth);
 }
 
 void disconnectWifi()
@@ -78,4 +74,70 @@ void disconnectWifi()
   Serial.println("Disconnecting...");
   g_wifiConnected = false;
   WiFi.disconnect();
+}
+
+String httpGETRequest(const char* server)
+{
+  WiFiClient client;
+  HTTPClient http;
+    
+  // Your Domain name with URL path or IP address with path
+  http.begin(client, server);
+  Serial.print("Making GET request to "); Serial.println(server);
+  
+  // If you need Node-RED/server authentication, insert user and password below
+  //http.setAuthorization("REPLACE_WITH_SERVER_USERNAME", "REPLACE_WITH_SERVER_PASSWORD");
+  
+  // Send HTTP POST request
+  int httpResponseCode = http.GET();
+  
+  String payload = "{}"; 
+  
+  if (httpResponseCode>0) {
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    payload = http.getString();
+  }
+  else {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+  }
+  // Free resources
+  http.end();
+
+  return payload;
+}
+
+String httpPOSTRequest(const char* server, const char* string, bool json)
+{
+  WiFiClient client;
+  HTTPClient http;
+    
+  // Your Domain name with URL path or IP address with path
+  http.begin(client, server);
+  Serial.print("Making POST request to "); Serial.println(server);
+  
+  if (json)
+    http.addHeader("Content-Type", "application/json");
+  else
+    http.addHeader("Content-Type", "text/plain");
+
+  // Send HTTP POST request
+  int httpResponseCode = http.POST(string);
+  
+  String payload = "{}"; 
+  
+  if (httpResponseCode>0) {
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    payload = http.getString();
+  }
+  else {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+  }
+  // Free resources
+  http.end();
+
+  return payload;
 }

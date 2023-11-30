@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <FirebaseESP32.h>
+#include <Arduino_Json.h>
 #include <WiFi.h>
 
 #include "defs.h"
@@ -51,8 +51,6 @@ void setup()
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
   delay(1000);
-
-  firebaseSetup();
 
   // Start by scanning networks
   scanNetworks();
@@ -106,11 +104,19 @@ OperationMode getMode()
     connectWifi();
 
   Serial.println("getting from firebase db");
-  bool irScan = fbGetIr();
-  bool irBroadcast = fbGetBroadcast();
-  bool rescan = fbGetRescan();
+  JSONVar serverResults = getModeFromWebserver();
+  bool reqWorking = true;
+  for (int i = 0; i < serverResults.keys().length(); i++)
+  {
+    if (JSONVar::stringify(serverResults[serverResults.keys()[i]]) == "error")
+      reqWorking = false;
+  }
+  Serial.print("REST results: "); Serial.println(serverResults);
+  
+  bool irScan = reqWorking && serverResults["ir"];
+  bool irBroadcast = reqWorking && serverResults["broadcast"];
+  bool rescan = reqWorking && serverResults["rescan"];
 
-  Serial.print("s: ");Serial.print(irScan);Serial.print("b: ");Serial.print(irBroadcast);Serial.print("rs: ");Serial.println(rescan);
   // TODO Remove debug print here
   // Serial.print("Scan: ");Serial.print(irScan);Serial.print("Broadcast: ");Serial.println(irBroadcast);
 

@@ -1,2 +1,4 @@
-.pio
+.pio/
 .vscode/
+webserver/.venv/
+webserver/webserver/__pycache__/
