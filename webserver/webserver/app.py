@@ -20,22 +20,42 @@ def register_device():
 @app.route("/mode", methods=['GET'])
 def mode():
     if request.method == 'GET':
-        print(f"Getting mode for device with id: {request.args.get('device-id')}")
-        return {'ir': False, 'broadcast': False, 'rescan': False}
+        device_id = request.args.get('device-id')
+        print(f"Getting mode for device with id: {device_id}")
+        return {'ir': False, 'broadcast': False, 'rescan': False, 'test': True}
+
+
+@app.route("/get-test", methods=['GET'])
+def get_test():
+    if request.method == 'GET':
+        device_id = request.args.get('device-id')
+        print(f"Getting test mode for device with id: {device_id}")
+        return {'id': 2, 'type': 'temp'}
 
 
 @app.route("/unswitch", methods=['POST'])
 def unswitch():
     if request.method == 'POST':
-        print(f'Unswitching for device with id: {request.args.get("device-id")}')
-        print(request.data.decode('utf-8'))
+        device_id = request.args.get('device-id')
+        print(f'Unswitching "{request.data.decode("utf-8")}" for device with id: {device_id}')
         return "DONE"
     
 
 @app.route("/upload", methods=['POST'])
 def upload():
     if request.method == 'POST':
-        print(f'Got {request.args.get("device-id")}\'s upload json:')
+        device_id = request.args.get('device-id')
+        print(f'Got {device_id}\'s upload json:')
+        print(request.data.decode('utf-8'))
+        
+        return "DONE"
+
+ 
+@app.route("/upload-test-result", methods=['POST'])
+def upload_test_result():
+    if request.method == 'POST':
+        device_id = request.args.get('device-id')
+        print(f'Got {device_id}\'s test upload json:')
         print(request.data.decode('utf-8'))
         
         return "DONE"

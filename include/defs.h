@@ -58,6 +58,11 @@ void irBroadcast();
 void trimIrScan();
 void setIrPattern(int length, bool* pattern);
 
+void runTest();
+void uploadTestResult(int networkId, String testname, bool result);
+// Add test functions here
+void tempTest(int networkId);
+
 // Scanned network info
 extern Network* g_networksArray;
 extern int g_networksCount;
@@ -76,7 +81,8 @@ extern int g_irLength;
 
 // Secrets... we should figure out how to do this without defines
 #define WIFI_SSID ""
-#define WIFI_PASSWORD""
+#define WIFI_PASSWORD ""
+#define WEBSERVER_ENDPOINT ""
 
 // Pinouts
 #define IR_LED 15
@@ -84,8 +90,6 @@ extern int g_irLength;
 #define MODE_BTN 27
 
 #define IR_DEFAULT_LENGTH 5000
-
-#define WEBSERVER_ENDPOINT ""
 
 #define MODE_IR_SCAN "modes/ir" 
 #define MODE_BROADCAST "modes/broadcast"

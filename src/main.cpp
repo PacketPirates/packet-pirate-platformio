@@ -78,6 +78,9 @@ void loop()
     case OperationMode::IRBroadcast:
       irBroadcast();
       break;
+    case OperationMode::TestMode:
+      runTest();
+      break;
     case OperationMode::HoldMode:
     default:
       delay(100);
@@ -117,16 +120,19 @@ OperationMode getMode()
   bool irScan = reqWorking && serverResults["ir"];
   bool irBroadcast = reqWorking && serverResults["broadcast"];
   bool rescan = reqWorking && serverResults["rescan"];
+  bool test = reqWorking && serverResults["test"];
 
   // TODO Remove debug print here
   // Serial.print("Scan: ");Serial.print(irScan);Serial.print("Broadcast: ");Serial.println(irBroadcast);
 
-  if (irScan)
+  if (rescan)
+    return OperationMode::ScanMode;
+  else if (irScan)
     return OperationMode::IRScan;
   else if (irBroadcast)
-    return OperationMode::IRBroadcast;
-  else if (rescan)
-    return OperationMode::ScanMode;
+    return OperationMode::IRBroadcast;  
+  else if (test)
+    return OperationMode::TestMode;  
 
   return OperationMode::HoldMode;
 }
