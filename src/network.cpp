@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <HTTPClient.h>
+#include <LittleFS.h>
 #include <WiFi.h>
 
 #include "defs.h"
@@ -190,6 +191,73 @@ String httpPOSTRequest(String server, const char* string, bool json)
 
   // Send HTTP POST request
   int httpResponseCode = http.POST(string);
+  
+  String payload = "{}"; 
+  
+  if (httpResponseCode>0) {
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    payload = http.getString();
+  }
+  else {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+  }
+  // Free resources
+  http.end();
+
+  return payload;
+}
+
+String httpFileUploadRequest(String server, const char* filepath, int chunkOffset, bool finalChunk)
+{
+  WiFiClient client;
+  HTTPClient http;
+
+  String modifiedPath = filepath;
+  modifiedPath.replace('/', '_');
+
+  server.concat("?device-id=");
+  server.concat(g_deviceId);
+  server.concat("&path=");
+  server.concat(modifiedPath);
+  server.concat("&offset=");
+  server.concat(chunkOffset);
+  server.concat("&final=");
+  server.concat(finalChunk);
+
+  char* buffer = new char[FILE_UPLOAD_BUFFER_BYTES];
+  File f = LittleFS.open(filepath);
+  if (!f)
+  {
+    Serial.println("ERROR: Failed to open LittleFS file for reading in upload!");
+    return "{}";
+  }
+
+  f.seek(chunkOffset * FILE_UPLOAD_BUFFER_BYTES, SeekSet);
+  int bytesRead = f.readBytes(buffer, FILE_UPLOAD_BUFFER_BYTES);
+  if (bytesRead < 0) 
+  {
+    Serial.println("ERROR: Unable to read bytes from file in upload!");
+    return "{}";
+  }
+
+  f.close();
+
+  uint8_t uintBuffer[FILE_UPLOAD_BUFFER_BYTES];
+  for (int i = 0; i < strlen(buffer); i++)
+    uintBuffer[i] = buffer[i];
+
+  // Delete the unnecessary memory as soon as possible
+  delete[] buffer;
+    
+  http.begin(client, server.c_str());
+  Serial.print("Making POST request to "); Serial.println(server);
+  
+  http.addHeader("Content-Type", "application/octet-stream");
+
+  // Send HTTP POST request
+  int httpResponseCode = http.POST(uintBuffer, strlen(buffer));
   
   String payload = "{}"; 
   

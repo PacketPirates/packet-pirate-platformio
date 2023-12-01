@@ -1,6 +1,10 @@
 from flask import Flask, request
+import os
 
 app = Flask(__name__)
+
+
+app.config['UPLOAD_FOLDER'] = 'D:\\Documents\\uploads'
 
 
 @app.route("/")
@@ -58,4 +62,30 @@ def upload_test_result():
         print(f'Got {device_id}\'s test upload json:')
         print(request.data.decode('utf-8'))
         
+        return "DONE"
+    
+
+@app.route("/upload-pcap", methods=["POST"])
+def upload_pcap():
+    if request.method == 'POST':
+        device_id = request.args.get('device-id')
+        path = request.args.get('path')
+        chunk = request.args.get('offset')
+        final = request.args.get('final')
+        chunk_data = request.data
+
+        print(f"Got {path} at chunk {chunk} from {device_id}. Final chunk status {final}")
+
+        print(chunk_data)
+
+        with open(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{chunk}"), "wb") as f:
+            f.write(chunk_data)
+        
+        if (final == "1"):
+            with open(os.path.join(app.config['UPLOAD_FOLDER'], path), "wb") as outfile:
+                for i in range(int(chunk) + 1):
+                    with open(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{i}"), 'rb') as infile:
+                        data = infile.read()
+                        outfile.write(data)
+                    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{i}"))
         return "DONE"

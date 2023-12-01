@@ -52,6 +52,7 @@ JSONVar getModeFromWebserver();
 
 String httpGETRequest(String server);
 String httpPOSTRequest(String server, const char* string, bool json);
+String httpFileUploadRequest(String server, const char* filepath, int chunkOffset, bool finalChunk);
 
 void irScan();
 void irBroadcast();
@@ -75,6 +76,8 @@ extern String g_deviceId;
 extern unsigned int g_tick;
 extern OperationMode g_previousMode;
 
+extern bool g_littleFS;
+
 // Ir pattern variables
 extern bool* g_irPattern;
 extern int g_irLength;
@@ -95,5 +98,7 @@ extern int g_irLength;
 #define MODE_BROADCAST "modes/broadcast"
 #define MODE_SCAN "modes/scan"
 #define MODE_TEST "modes/test"
+
+#define FILE_UPLOAD_BUFFER_BYTES 1024
 
 #endif
