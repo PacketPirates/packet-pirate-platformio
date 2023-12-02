@@ -54,6 +54,8 @@ String httpGETRequest(String server);
 String httpPOSTRequest(String server, const char* string, bool json);
 String httpFileUploadRequest(String server, const char* filepath, int chunkOffset, bool finalChunk);
 
+void uploadFile(const char* filepath);
+
 void irScan();
 void irBroadcast();
 void trimIrScan();
@@ -99,6 +101,6 @@ extern int g_irLength;
 #define MODE_SCAN "modes/scan"
 #define MODE_TEST "modes/test"
 
-#define FILE_UPLOAD_BUFFER_BYTES 1024
+#define FILE_UPLOAD_BUFFER_BYTES 2048
 
 #endif

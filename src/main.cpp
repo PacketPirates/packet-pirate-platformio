@@ -21,6 +21,55 @@ bool g_littleFS;
 bool* g_irPattern;
 int g_irLength;
 
+void clearStorage()
+{
+  // Recursively delete all files and directories
+  File root = LittleFS.open("/");
+  if (!root.isDirectory()) {
+    Serial.println("Root directory is not a directory");
+    return;
+  }
+
+  File child;
+  while (child = root.openNextFile()) {
+    Serial.print("Clearing child: "); Serial.println(child.name());
+    String childName = String("/") + String(child.name());
+    if (child.isDirectory()) {
+      clearDirectory(childName.c_str()); // Recursively clear subdirectories
+    } else {
+      child.close();
+      LittleFS.remove(childName.c_str()); // Delete file
+    }
+  }
+  root.close();
+}
+
+void clearDirectory(const String& path) {
+  Serial.print("Clearing dir with path: "); Serial.println(path);
+  File dir = LittleFS.open(path);
+  if (!dir.isDirectory()) {
+    Serial.print("Failed to open directory: ");
+    Serial.println(path);
+    return;
+  }
+
+  File child;
+  while (child = dir.openNextFile()) {
+    String childName = String("/") + String(child.name());
+    if (child.isDirectory()) {
+      clearDirectory(childName); // Recursively clear subdirectories
+    } else {
+      child.close();
+      LittleFS.remove(childName); // Delete file
+    }
+    child.close();
+  }
+  dir.close();
+
+  // Finally, delete the directory itself
+  LittleFS.rmdir(path);
+}
+
 void setup() 
 {
   // Scanned network info
@@ -57,6 +106,9 @@ void setup()
     Serial.println("LittleFS mount failed! Starting in crippled mode");
     g_littleFS = false;
   }
+
+  Serial.println("Clearing filesystem...");
+  clearStorage();
 
   // Start by scanning networks
   scanNetworks();

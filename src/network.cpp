@@ -209,6 +209,30 @@ String httpPOSTRequest(String server, const char* string, bool json)
   return payload;
 }
 
+void uploadFile(const char* filepath)
+{
+  connectWifi();
+
+  Serial.print("Uploading file \""); Serial.print(filepath); Serial.println("\"...");
+  File f = LittleFS.open(filepath, "r");
+  size_t fileSize = f.size();
+  f.close();
+
+  int numberOfChunks = (fileSize / FILE_UPLOAD_BUFFER_BYTES) + ((fileSize % FILE_UPLOAD_BUFFER_BYTES == 0) ? 0 : 1);
+
+  Serial.print("File with size: "); Serial.print(fileSize); Serial.print(" and chunks: "); Serial.println(numberOfChunks);
+
+  String uploadEndpoint = "";
+  uploadEndpoint.concat(WEBSERVER_ENDPOINT);
+  uploadEndpoint.concat("/upload-pcap");
+
+  for (int i = 0; i < numberOfChunks; i++)
+  {
+    Serial.print("Starting chunk: "); Serial.println(i);
+    httpFileUploadRequest(uploadEndpoint, filepath, i, (i == numberOfChunks - 1));
+  }
+}
+
 String httpFileUploadRequest(String server, const char* filepath, int chunkOffset, bool finalChunk)
 {
   WiFiClient client;
@@ -217,16 +241,22 @@ String httpFileUploadRequest(String server, const char* filepath, int chunkOffse
   String modifiedPath = filepath;
   modifiedPath.replace('/', '_');
 
-  server.concat("?device-id=");
-  server.concat(g_deviceId);
-  server.concat("&path=");
-  server.concat(modifiedPath);
-  server.concat("&offset=");
-  server.concat(chunkOffset);
-  server.concat("&final=");
-  server.concat(finalChunk);
+  String serverStr = server;
 
-  char* buffer = new char[FILE_UPLOAD_BUFFER_BYTES];
+  serverStr.concat("?device-id=");
+  serverStr.concat(g_deviceId);
+  serverStr.concat("&path=");
+  serverStr.concat(modifiedPath);
+  serverStr.concat("&offset=");
+  serverStr.concat(chunkOffset);
+  serverStr.concat("&final=");
+  serverStr.concat(finalChunk);
+
+  char buffer[FILE_UPLOAD_BUFFER_BYTES];
+  // 0 our buffer so we can leave ending 0's
+  for (int i = 0; i < FILE_UPLOAD_BUFFER_BYTES; i++)
+    buffer[i] = 0;
+
   File f = LittleFS.open(filepath);
   if (!f)
   {
@@ -244,20 +274,21 @@ String httpFileUploadRequest(String server, const char* filepath, int chunkOffse
 
   f.close();
 
+  // There needs to be a more efficient way of doing this because
+  // the memory usage this entails makes chunks so much smaller than they
+  // could be
+  Serial.println("Converting buffer...");
   uint8_t uintBuffer[FILE_UPLOAD_BUFFER_BYTES];
-  for (int i = 0; i < strlen(buffer); i++)
-    uintBuffer[i] = buffer[i];
+  for (int i = 0; i < FILE_UPLOAD_BUFFER_BYTES; i++)
+    uintBuffer[i] = (uint8_t) buffer[i];
 
-  // Delete the unnecessary memory as soon as possible
-  delete[] buffer;
-    
-  http.begin(client, server.c_str());
-  Serial.print("Making POST request to "); Serial.println(server);
+  http.begin(client, serverStr.c_str());
+  Serial.print("Making POST request to "); Serial.println(serverStr);
   
   http.addHeader("Content-Type", "application/octet-stream");
 
   // Send HTTP POST request
-  int httpResponseCode = http.POST(uintBuffer, strlen(buffer));
+  int httpResponseCode = http.POST(uintBuffer, FILE_UPLOAD_BUFFER_BYTES);
   
   String payload = "{}"; 
   
@@ -272,6 +303,9 @@ String httpFileUploadRequest(String server, const char* filepath, int chunkOffse
   }
   // Free resources
   http.end();
+
+  if (httpResponseCode == 400)
+    httpFileUploadRequest(server, filepath, chunkOffset, finalChunk);
 
   return payload;
 }

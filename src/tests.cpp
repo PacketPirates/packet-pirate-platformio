@@ -6,6 +6,7 @@
 
 #include "defs.h"
 #include <esp_wifi.h>
+#include <nvs_flash.h>
 
 void runTest()
 {
@@ -137,23 +138,10 @@ void PCAPLoop()
     Serial.println(pcap.filename + " saved!");
     Serial.println("==================");
 
-    Serial.print("Uploading file \""); Serial.print(filename); Serial.println("\"...");
-    File f = LittleFS.open(filename, "r");
-    size_t fileSize = f.size();
-    f.close();
 
-    int numberOfChunks = (fileSize / FILE_UPLOAD_BUFFER_BYTES) + (fileSize % FILE_UPLOAD_BUFFER_BYTES == 0) ? 0 : 1;
-
-    Serial.print("File with size: "); Serial.print(fileSize); Serial.print(" and chunks: "); Serial.println(numberOfChunks);
-
-    String uploadEndpoint = "";
-    uploadEndpoint.concat(WEBSERVER_ENDPOINT);
-    uploadEndpoint.concat("/upload-pcap");
-
-    for (int i = 0; i < numberOfChunks; i++)
-    {
-      httpFileUploadRequest(uploadEndpoint, filename.c_str(), i, (i == numberOfChunks - 1));
-    }
+    esp_wifi_set_promiscuous(false);
+    uploadFile(filename.c_str());
+    esp_wifi_set_promiscuous(true);
 
     openFile(); //open new file
   }
@@ -164,6 +152,20 @@ void tempTest(int networkId)
   Serial.print("Running test on network: "); Serial.print(g_networksArray[networkId].ssid);
   Serial.print(", AP id #: "); Serial.print(g_networksArray[networkId].id); Serial.println("...");
   delay(3000);
+    
+  /* setup wifi */
+  nvs_flash_init();
+  tcpip_adapter_init();
+  ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
+  ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
+  ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_AP) );  
+  ESP_ERROR_CHECK( esp_wifi_start() );
+  esp_wifi_set_promiscuous(true);
+  esp_wifi_set_promiscuous_rx_cb(sniffer);
+  wifi_second_chan_t secondCh = (wifi_second_chan_t)NULL;
+  esp_wifi_set_channel(ch,secondCh);
 
   openFile();
 
@@ -175,21 +177,7 @@ void tempTest(int networkId)
 
   pcap.closeFile();
 
-  Serial.print("Uploading file \""); Serial.print(filename); Serial.println("\"...");
-  File f = LittleFS.open(filename, "r");
-  size_t fileSize = f.size();
-  f.close();
-
-  int numberOfChunks = (fileSize / FILE_UPLOAD_BUFFER_BYTES) + (fileSize % 16 == 0) ? 0 : 1;
-
-  String uploadEndpoint = "";
-  uploadEndpoint.concat(WEBSERVER_ENDPOINT);
-  uploadEndpoint.concat("/upload-pcap");
-
-  for (int i = 0; i < numberOfChunks; i++)
-  {
-    httpFileUploadRequest(uploadEndpoint, filename.c_str(), i, (i == numberOfChunks - 1));
-  }
+  uploadFile(filename.c_str());
 
   uploadTestResult(networkId, "temp", true);
 }
