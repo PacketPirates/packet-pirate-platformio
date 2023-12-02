@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "webserver"
+version = "0.1.0"
+description = ""
+authors = ["Devon <devon.stettler@tutanota.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flask = "^3.0.0"
+firebase-admin = "^6.2.0"
+apscheduler = "^3.10.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

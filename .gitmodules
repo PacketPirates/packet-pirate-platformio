@@ -1,0 +1,3 @@
+[submodule "lib/ArduinoPcap"]
+	path = lib/ArduinoPcap
+	url = git@github.com:dstettler/ArduinoPcap.git
