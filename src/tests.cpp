@@ -43,11 +43,11 @@ void uploadTestResult(int networkId, String testname, bool result)
   uploadTestEndpoint.concat(WEBSERVER_ENDPOINT);
   uploadTestEndpoint.concat("/upload-test-result");
 
-  String json = "";
+  String json = "{";
 
-  json.concat("\"id\": {"); json.concat(String(networkId)); json.concat("}, ");
-  json.concat("\"test\": { \""); json.concat(testname); json.concat("\"}, ");
-  json.concat("\"result\": {"); json.concat(String(result)); json.concat("} ");
+  json.concat("\"id\": "); json.concat(String(networkId)); json.concat(", ");
+  json.concat("\"test\": \""); json.concat(testname); json.concat("\", ");
+  json.concat("\"result\": "); json.concat(String(result)); json.concat("}");
 
   httpPOSTRequest(uploadTestEndpoint, json.c_str(), true);
 }
@@ -55,7 +55,7 @@ void uploadTestResult(int networkId, String testname, bool result)
 //===== SETTINGS =====//
 #define CHANNEL 1
 #define FILENAME "esp32"
-#define SAVE_INTERVAL 30 //save new file every 30s
+#define SAVE_INTERVAL 10 //save new file every 30s
 #define CHANNEL_HOPPING true //if true it will scan on all channels
 #define MAX_CHANNEL 11 //(only necessary if channelHopping is true)
 #define HOP_INTERVAL 214 //in ms (only necessary if channelHopping is true)
@@ -84,8 +84,6 @@ void sniffer(void *buf, wifi_promiscuous_pkt_type_t type){
   }
   
 }
-
-esp_err_t event_handler(void *ctx, system_event_t *event){ return ESP_OK; }
 
 /* opens a new file */
 void openFile(){
@@ -154,14 +152,6 @@ void tempTest(int networkId)
   delay(3000);
     
   /* setup wifi */
-  nvs_flash_init();
-  tcpip_adapter_init();
-  ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
-  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-  ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
-  ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
-  ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_AP) );  
-  ESP_ERROR_CHECK( esp_wifi_start() );
   esp_wifi_set_promiscuous(true);
   esp_wifi_set_promiscuous_rx_cb(sniffer);
   wifi_second_chan_t secondCh = (wifi_second_chan_t)NULL;
@@ -170,7 +160,7 @@ void tempTest(int networkId)
   openFile();
 
   unsigned long startingTime = millis();
-  while (millis() < startingTime + (60 * 1000))
+  while (millis() < startingTime + (30 * 1000))
     PCAPLoop();
 
   String filename = pcap.filename;

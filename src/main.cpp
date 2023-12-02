@@ -4,6 +4,8 @@
 #include <WiFi.h>
 
 #include "defs.h"
+#include <nvs_flash.h>
+#include <esp_wifi.h>
 
 // Define globals specified in defs.h
 // Scanned network info
@@ -70,6 +72,8 @@ void clearStorage()
   root.close();
 }
 
+esp_err_t event_handler(void *ctx, system_event_t *event){ return ESP_OK; }
+
 void setup() 
 {
   // Scanned network info
@@ -99,6 +103,15 @@ void setup()
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
   delay(1000);
+
+  nvs_flash_init();
+  tcpip_adapter_init();
+  ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
+  ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
+  ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_AP) );  
+  ESP_ERROR_CHECK( esp_wifi_start() );
 
   Serial.println("Mounting new LittleFS partition...");
   if (!LittleFS.begin(true, "/storage"))

@@ -2,3 +2,4 @@
 .vscode/
 webserver/.venv/
 webserver/webserver/__pycache__/
+webserver/webserver/secrets/

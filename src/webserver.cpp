@@ -10,18 +10,22 @@ void uploadNetworks() {
   if (!g_wifiConnected)
     connectWifi();
 
-  String json = "";
+  String json = "{";
 
   for (int i = 0; i < g_networksCount; i++)
   {
+    json.concat("\"");
     json.concat(i);
-    json.concat(": {");
+    json.concat("\": {");
     json.concat("\"authmode\": "); json.concat(g_networksArray[i].authMode); json.concat(",");
     json.concat("\"id\": "); json.concat(g_networksArray[i].id); json.concat(",");
     json.concat("\"rssi\": "); json.concat(g_networksArray[i].rssi); json.concat(",");
-    json.concat("\"ssid\": \""); json.concat(g_networksArray[i].ssid); json.concat("\",");
-    json.concat("}, ");
+    json.concat("\"ssid\": \""); json.concat(g_networksArray[i].ssid); json.concat("\"");
+    json.concat("}");
+    if (i < g_networksCount - 1)
+      json.concat(", ");
   }
+  json.concat("}");
 
   String upPath = "";
   upPath.concat(WEBSERVER_ENDPOINT);

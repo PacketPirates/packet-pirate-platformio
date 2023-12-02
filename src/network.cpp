@@ -230,81 +230,86 @@ void uploadFile(const char* filepath)
   {
     Serial.print("Starting chunk: "); Serial.println(i);
     httpFileUploadRequest(uploadEndpoint, filepath, i, (i == numberOfChunks - 1));
+    delay(500);
   }
 }
 
 String httpFileUploadRequest(String server, const char* filepath, int chunkOffset, bool finalChunk)
 {
-  WiFiClient client;
-  HTTPClient http;
-
-  String modifiedPath = filepath;
-  modifiedPath.replace('/', '_');
-
-  String serverStr = server;
-
-  serverStr.concat("?device-id=");
-  serverStr.concat(g_deviceId);
-  serverStr.concat("&path=");
-  serverStr.concat(modifiedPath);
-  serverStr.concat("&offset=");
-  serverStr.concat(chunkOffset);
-  serverStr.concat("&final=");
-  serverStr.concat(finalChunk);
-
-  char buffer[FILE_UPLOAD_BUFFER_BYTES];
-  // 0 our buffer so we can leave ending 0's
-  for (int i = 0; i < FILE_UPLOAD_BUFFER_BYTES; i++)
-    buffer[i] = 0;
-
-  File f = LittleFS.open(filepath);
-  if (!f)
-  {
-    Serial.println("ERROR: Failed to open LittleFS file for reading in upload!");
-    return "{}";
-  }
-
-  f.seek(chunkOffset * FILE_UPLOAD_BUFFER_BYTES, SeekSet);
-  int bytesRead = f.readBytes(buffer, FILE_UPLOAD_BUFFER_BYTES);
-  if (bytesRead < 0) 
-  {
-    Serial.println("ERROR: Unable to read bytes from file in upload!");
-    return "{}";
-  }
-
-  f.close();
-
-  // There needs to be a more efficient way of doing this because
-  // the memory usage this entails makes chunks so much smaller than they
-  // could be
-  Serial.println("Converting buffer...");
-  uint8_t uintBuffer[FILE_UPLOAD_BUFFER_BYTES];
-  for (int i = 0; i < FILE_UPLOAD_BUFFER_BYTES; i++)
-    uintBuffer[i] = (uint8_t) buffer[i];
-
-  http.begin(client, serverStr.c_str());
-  Serial.print("Making POST request to "); Serial.println(serverStr);
-  
-  http.addHeader("Content-Type", "application/octet-stream");
-
-  // Send HTTP POST request
-  int httpResponseCode = http.POST(uintBuffer, FILE_UPLOAD_BUFFER_BYTES);
-  
+  int httpResponseCode;
   String payload = "{}"; 
-  
-  if (httpResponseCode>0) {
-    Serial.print("HTTP Response code: ");
-    Serial.println(httpResponseCode);
-    payload = http.getString();
-  }
-  else {
-    Serial.print("Error code: ");
-    Serial.println(httpResponseCode);
-  }
-  // Free resources
-  http.end();
+ 
+  {
+    WiFiClient client;
+    HTTPClient http;
 
-  if (httpResponseCode == 400)
+    String modifiedPath = filepath;
+    modifiedPath.replace('/', '_');
+
+    String serverStr = server;
+
+    serverStr.concat("?device-id=");
+    serverStr.concat(g_deviceId);
+    serverStr.concat("&path=");
+    serverStr.concat(modifiedPath);
+    serverStr.concat("&offset=");
+    serverStr.concat(chunkOffset);
+    serverStr.concat("&final=");
+    serverStr.concat(finalChunk);
+
+    char buffer[FILE_UPLOAD_BUFFER_BYTES];
+    // 0 our buffer so we can leave ending 0's
+    for (int i = 0; i < FILE_UPLOAD_BUFFER_BYTES; i++)
+      buffer[i] = 0;
+
+    File f = LittleFS.open(filepath);
+    if (!f)
+    {
+      Serial.println("ERROR: Failed to open LittleFS file for reading in upload!");
+      return "{}";
+    }
+
+    f.seek(chunkOffset * FILE_UPLOAD_BUFFER_BYTES, SeekSet);
+    int bytesRead = f.readBytes(buffer, FILE_UPLOAD_BUFFER_BYTES);
+    if (bytesRead < 0) 
+    {
+      Serial.println("ERROR: Unable to read bytes from file in upload!");
+      return "{}";
+    }
+
+    f.close();
+
+    // There needs to be a more efficient way of doing this because
+    // the memory usage this entails makes chunks so much smaller than they
+    // could be
+    Serial.println("Converting buffer...");
+    uint8_t uintBuffer[FILE_UPLOAD_BUFFER_BYTES];
+    for (int i = 0; i < FILE_UPLOAD_BUFFER_BYTES; i++)
+      uintBuffer[i] = (uint8_t) buffer[i];
+
+    http.begin(client, serverStr.c_str());
+    Serial.print("Making POST request to "); Serial.println(serverStr);
+    
+    http.addHeader("Content-Type", "application/octet-stream");
+
+    // Send HTTP POST request
+    httpResponseCode = http.POST(uintBuffer, FILE_UPLOAD_BUFFER_BYTES);
+    
+    if (httpResponseCode>0) {
+      Serial.print("HTTP Response code: ");
+      Serial.println(httpResponseCode);
+      payload = http.getString();
+    }
+    else {
+      Serial.print("Error code: ");
+      Serial.println(httpResponseCode);
+    }
+
+    // Free resources
+    http.end();
+  }
+
+  if (httpResponseCode != 200)
     httpFileUploadRequest(server, filepath, chunkOffset, finalChunk);
 
   return payload;
