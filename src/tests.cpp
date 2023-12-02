@@ -152,5 +152,5 @@ void tempTest(int networkId)
 
   uploadFile(filename.c_str());
 
-  uploadTestResult(networkId, "temp", true);
+  uploadTestResult(networkId, "capture", true);
 }

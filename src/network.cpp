@@ -231,7 +231,6 @@ void uploadFile(const char* filepath)
   {
     Serial.print("Starting chunk: "); Serial.println(i);
     httpFileUploadRequest(uploadEndpoint, filepath, i, (i == numberOfChunks - 1));
-    delay(500);
   }
 }
 

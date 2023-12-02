@@ -148,12 +148,13 @@ def upload_test_result():
         device_id = request.args.get('device-id')
         device_id = device_id.replace('"', '')
         print(f'Got {device_id}\'s test upload json:')
-        print(request.data.decode('utf-8'))
         result = json.loads(request.data.decode('utf-8'))
         print(result)
-        current_passed = db.collection('devices').document(device_id).collection('networks').document(str(result['id'])).get().to_dict()
+        id_str = str(result['id'])
+        print(f"{id_str} is of type {type(id_str)}")
+        current_passed = db.collection('devices').document(device_id).collection('networks').document(id_str).get().to_dict()
         current_passed['tests_passed'][result['test']] = bool(result['result'])
-        db.collection('devices').document(device_id).collection('networks').document(result['id']).set(current_passed)
+        db.collection('devices').document(device_id).collection('networks').document(id_str).set(current_passed)
         return "DONE"
     
 
