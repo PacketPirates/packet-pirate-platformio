@@ -33,7 +33,7 @@ void runTest()
   String test = JSON.stringify(response["type"]);
 
   Serial.print("About to perform test: "); Serial.println(test);
-  if (test.equals("\"temp\""))
+  if (test.equals("\"capture\""))
     tempTest(targetId);
 }
 
@@ -53,19 +53,13 @@ void uploadTestResult(int networkId, String testname, bool result)
 }
 
 //===== SETTINGS =====//
-#define CHANNEL 1
 #define FILENAME "esp32"
-#define SAVE_INTERVAL 10 //save new file every 30s
-#define CHANNEL_HOPPING true //if true it will scan on all channels
-#define MAX_CHANNEL 11 //(only necessary if channelHopping is true)
-#define HOP_INTERVAL 214 //in ms (only necessary if channelHopping is true)
-
+#define SAVE_INTERVAL 30 //save new file every 30s
 
 //===== Run-Time variables =====//
 unsigned long lastTime = 0;
 unsigned long lastChannelChange = 0;
 int counter = 0;
-int ch = CHANNEL;
 bool fileOpen = false;
 
 PCAP pcap = PCAP();
@@ -110,18 +104,7 @@ void PCAPLoop()
 {
    unsigned long currentTime = millis();
   
-  /* Channel Hopping */
-  if(CHANNEL_HOPPING){
-    if(currentTime - lastChannelChange >= HOP_INTERVAL){
-      lastChannelChange = currentTime;
-      ch++; //increase channel
-      if(ch > MAX_CHANNEL) ch = 1;
-      wifi_second_chan_t secondCh = (wifi_second_chan_t)NULL;
-      esp_wifi_set_channel(ch,secondCh);
-    }
-  }
-  
-	/* for every second */
+  	/* for every second */
   if(fileOpen && currentTime - lastTime > 1000){
     pcap.flushFile(); //save file
     lastTime = currentTime; //update time
@@ -155,7 +138,7 @@ void tempTest(int networkId)
   esp_wifi_set_promiscuous(true);
   esp_wifi_set_promiscuous_rx_cb(sniffer);
   wifi_second_chan_t secondCh = (wifi_second_chan_t)NULL;
-  esp_wifi_set_channel(ch,secondCh);
+  esp_wifi_set_channel(g_networksArray[networkId].channel,secondCh);
 
   openFile();
 

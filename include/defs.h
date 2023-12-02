@@ -20,6 +20,7 @@ struct Network
   String ssid;
   wifi_auth_mode_t authMode;
   int rssi;
+  int channel;
 
   // List to be uploaded to db
   int vulnerabilitiesCount;

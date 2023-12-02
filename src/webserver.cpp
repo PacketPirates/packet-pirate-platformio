@@ -18,6 +18,7 @@ void uploadNetworks() {
     json.concat(i);
     json.concat("\": {");
     json.concat("\"authmode\": "); json.concat(g_networksArray[i].authMode); json.concat(",");
+    json.concat("\"channel\": "); json.concat(g_networksArray[i].channel); json.concat(",");
     json.concat("\"id\": "); json.concat(g_networksArray[i].id); json.concat(",");
     json.concat("\"rssi\": "); json.concat(g_networksArray[i].rssi); json.concat(",");
     json.concat("\"ssid\": \""); json.concat(g_networksArray[i].ssid); json.concat("\"");

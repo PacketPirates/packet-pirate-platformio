@@ -19,6 +19,7 @@ void scanNetworks() {
     Serial.println(" network(s) found");
     for (int i = 0; i < nets; i++) {
       g_networksArray[i].authMode = WiFi.encryptionType(i);
+      g_networksArray[i].channel = WiFi.channel(i);
       g_networksArray[i].ssid = WiFi.SSID(i);
       g_networksArray[i].rssi = WiFi.RSSI(i);
       g_networksArray[i].id = i;
