@@ -1,5 +1,6 @@
 import time
 from flask import Flask, request
+from flask_socketio import SocketIO
 import json
 import os
 import pathlib
@@ -13,6 +14,7 @@ HEARTBEAT_TIME: int = 10
 
 
 app = Flask(__name__)
+socketio = SocketIO(app, binary=True)
 
 
 app.config['UPLOAD_FOLDER'] = 'D:\\Documents\\uploads'
@@ -22,16 +24,13 @@ firebase_app = firebase_admin.initialize_app(firebase_creds)
 db: firestore.firestore.Client = firestore.client()
 
 device_states = {}
-heartbeat = False
 
 def firebaseHeartbeat():
     print("Firebase heartbeat!")
-    heartbeat = True
     for _, (key, _) in enumerate(device_states.items()):
         remote_state = db.collection('devices').document(key).get().to_dict()
         device_states[key] = remote_state
-    heartbeat = False
-    
+        
 
 
 def updateDeviceState():
@@ -48,6 +47,42 @@ def firebaseDeleteCollection(collection_ref, size):
 
     if deleted >= size:
         firebaseDeleteCollection(collection_ref, size)
+
+
+@socketio.on('connect')
+def connect():
+    print('Client connected\n\n\n\n\n\n\n\n\n\n\n')
+    socketio.send('YO WHATS UP')
+
+
+@socketio.on('message')
+def upload_pcap(data):
+    print('Received data: ', data)
+    # if request.method == 'POST':
+    #     device_id = request.args.get('device-id')
+    #     device_id = device_id.replace('"', '')
+    #     path = request.args.get('path')
+    #     chunk = request.args.get('offset')
+    #     final = request.args.get('final')
+    #     chunk_data = request.data
+
+    #     print(f"Got {path} at chunk {chunk} from {device_id}. Final chunk status {final}")
+
+    #     with open(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{chunk}"), "wb") as f:
+    #         f.write(chunk_data)
+        
+    #     if (final == "1"):
+    #         final_path = os.path.join(app.config['UPLOAD_FOLDER'], path)
+    #         if os.path.exists(final_path):
+    #             final_path += "_1"
+
+    #         with open(final_path, "wb") as outfile:
+    #             for i in range(int(chunk) + 1):
+    #                 with open(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{i}"), 'rb') as infile:
+    #                     data = infile.read()
+    #                     outfile.write(data)
+    #                 os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{i}"))
+    #     return "DONE"
 
 @app.route("/")
 def root_path():
@@ -97,7 +132,8 @@ def get_test():
         device_id = request.args.get('device-id')
         device_id = device_id.replace('"', '')
         print(f"Getting test mode for device with id: {device_id}")
-        return {'id': device_states[device_id]['test-params']['network_id'], 'type': device_states[device_id]['test-params']['test_type']}
+        #return {'id': device_states[device_id]['test-params']['network_id'], 'type': device_states[device_id]['test-params']['test_type']}
+        return {'id': 0, 'type': 'capture'}
 
 
 @app.route("/unswitch", methods=['POST'])
@@ -158,33 +194,33 @@ def upload_test_result():
         return "DONE"
     
 
-@app.route("/upload-pcap", methods=["POST"])
-def upload_pcap():
-    if request.method == 'POST':
-        device_id = request.args.get('device-id')
-        device_id = device_id.replace('"', '')
-        path = request.args.get('path')
-        chunk = request.args.get('offset')
-        final = request.args.get('final')
-        chunk_data = request.data
+# @app.route("/upload-pcap", methods=["POST"])
+# def upload_pcap():
+#     if request.method == 'POST':
+#         device_id = request.args.get('device-id')
+#         device_id = device_id.replace('"', '')
+#         path = request.args.get('path')
+#         chunk = request.args.get('offset')
+#         final = request.args.get('final')
+#         chunk_data = request.data
 
-        print(f"Got {path} at chunk {chunk} from {device_id}. Final chunk status {final}")
+#         print(f"Got {path} at chunk {chunk} from {device_id}. Final chunk status {final}")
 
-        with open(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{chunk}"), "wb") as f:
-            f.write(chunk_data)
+#         with open(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{chunk}"), "wb") as f:
+#             f.write(chunk_data)
         
-        if (final == "1"):
-            final_path = os.path.join(app.config['UPLOAD_FOLDER'], path)
-            if os.path.exists(final_path):
-                final_path += "_1"
+#         if (final == "1"):
+#             final_path = os.path.join(app.config['UPLOAD_FOLDER'], path)
+#             if os.path.exists(final_path):
+#                 final_path += "_1"
 
-            with open(final_path, "wb") as outfile:
-                for i in range(int(chunk) + 1):
-                    with open(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{i}"), 'rb') as infile:
-                        data = infile.read()
-                        outfile.write(data)
-                    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{i}"))
-        return "DONE"
+#             with open(final_path, "wb") as outfile:
+#                 for i in range(int(chunk) + 1):
+#                     with open(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{i}"), 'rb') as infile:
+#                         data = infile.read()
+#                         outfile.write(data)
+#                     os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{i}"))
+#         return "DONE"
     
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=firebaseHeartbeat, trigger='interval', seconds=HEARTBEAT_TIME)
