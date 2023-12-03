@@ -9,6 +9,10 @@ import atexit
 import firebase_admin
 from firebase_admin import firestore
 
+from .tcpserver import tcpServe
+
+import threading
+
 from apscheduler.schedulers.background import BackgroundScheduler
 
 HEARTBEAT_TIME: int = 10
@@ -49,12 +53,6 @@ def firebaseDeleteCollection(collection_ref, size):
 
     if deleted >= size:
         firebaseDeleteCollection(collection_ref, size)
-
-@sock.route('/echo')
-def echo(ws):
-    while True:
-        data = ws.receive()
-        ws.send(data)
 
 # @socketio.on('connect')
 # def connect():
@@ -239,3 +237,7 @@ scheduler.add_job(func=firebaseHeartbeat, trigger='interval', seconds=HEARTBEAT_
 scheduler.start()
 
 atexit.register(lambda: scheduler.shutdown())
+
+tcp_thread = threading.Thread(target=tcpServe)
+tcp_thread.daemon = True
+tcp_thread.start()
