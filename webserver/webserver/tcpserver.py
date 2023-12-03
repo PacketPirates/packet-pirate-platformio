@@ -60,7 +60,7 @@ class TCPHandler:
         bytes_read += self._sock.recv_into(view[bytes_read:])
         return bytes_read
 
-def tcpServe():
+def tcpServe(callback):
     #with socketserver.TCPServer((TCP_HOST, TCP_PORT), TCPHandler) as server:
     #    print(f'Serving tcp on port {TCP_PORT}')
     #    server.serve_forever()
@@ -86,7 +86,7 @@ def tcpServe():
                 
             sock.close()
             data = dbytearray
-            print(f"Final data: {list(data)}")
+            #print(f"Final data: {list(data)}")
         
             device_id_len = data[0]
             deviceId = ""
@@ -113,7 +113,7 @@ def tcpServe():
             buffer.pop()
 
             print(f"Got chunk {currentChunk} from {deviceId} with path {filepath}. Final status is {finalChunk}...")
-            print(f"Buffer {buffer}")
+            #print(f"Buffer {buffer}")
 
             with open(os.path.join(UPLOAD_FOLDER, f"{filepath}__{currentChunk}"), "wb") as f:
                 f.write(bytes(buffer))
@@ -129,4 +129,6 @@ def tcpServe():
                             data = infile.read()
                             outfile.write(data)
                         os.remove(os.path.join(UPLOAD_FOLDER, f"{filepath}__{i}"))
+
+                callback(final_path)
     
