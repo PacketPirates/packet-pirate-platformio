@@ -1,18 +1,28 @@
 import time
 from flask import Flask, request
+#from flask_socketio import SocketIO
+from flask_sock import Sock
 import json
 import os
 import pathlib
 import atexit
 import firebase_admin
 from firebase_admin import firestore
+import subprocess
+import requests
+
+from .tcpserver import tcpServe
+
+import threading
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
 HEARTBEAT_TIME: int = 10
+SECURITY_ENDPOINT = "http://147.182.195.19:5000"
 
 
 app = Flask(__name__)
+sock = Sock(app)
 
 
 app.config['UPLOAD_FOLDER'] = 'D:\\Documents\\uploads'
@@ -22,21 +32,22 @@ firebase_app = firebase_admin.initialize_app(firebase_creds)
 db: firestore.firestore.Client = firestore.client()
 
 device_states = {}
-heartbeat = False
 
 def firebaseHeartbeat():
     print("Firebase heartbeat!")
-    heartbeat = True
     for _, (key, _) in enumerate(device_states.items()):
         remote_state = db.collection('devices').document(key).get().to_dict()
         device_states[key] = remote_state
-    heartbeat = False
-    
+        
 
 
-def updateDeviceState():
-    # Firebase stuff
-    print("temp")
+def post_upload_integration(upload_path):
+    print(upload_path)
+    crack_r = requests.post(f'{SECURITY_ENDPOINT}/crackPcap', files={'file': f"@{upload_path}"})
+    crack_r_json = crack_r.json()
+    print(crack_r_json)    
+    hash_r = requests.post(f'{SECURITY_ENDPOINT}/getCrackedHash', data={'hash': crack_r_json['hashes'][0]})
+
 
 def firebaseDeleteCollection(collection_ref, size):
     docs = collection_ref.list_documents(page_size=size)
@@ -97,7 +108,8 @@ def get_test():
         device_id = request.args.get('device-id')
         device_id = device_id.replace('"', '')
         print(f"Getting test mode for device with id: {device_id}")
-        return {'id': device_states[device_id]['test-params']['network_id'], 'type': device_states[device_id]['test-params']['test_type']}
+        #return {'id': device_states[device_id]['test-params']['network_id'], 'type': device_states[device_id]['test-params']['test_type']}
+        return {'id': 0, 'type': 'capture'}
 
 
 @app.route("/unswitch", methods=['POST'])
@@ -157,37 +169,12 @@ def upload_test_result():
         db.collection('devices').document(device_id).collection('networks').document(id_str).set(current_passed)
         return "DONE"
     
-
-@app.route("/upload-pcap", methods=["POST"])
-def upload_pcap():
-    if request.method == 'POST':
-        device_id = request.args.get('device-id')
-        device_id = device_id.replace('"', '')
-        path = request.args.get('path')
-        chunk = request.args.get('offset')
-        final = request.args.get('final')
-        chunk_data = request.data
-
-        print(f"Got {path} at chunk {chunk} from {device_id}. Final chunk status {final}")
-
-        with open(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{chunk}"), "wb") as f:
-            f.write(chunk_data)
-        
-        if (final == "1"):
-            final_path = os.path.join(app.config['UPLOAD_FOLDER'], path)
-            if os.path.exists(final_path):
-                final_path += "_1"
-
-            with open(final_path, "wb") as outfile:
-                for i in range(int(chunk) + 1):
-                    with open(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{i}"), 'rb') as infile:
-                        data = infile.read()
-                        outfile.write(data)
-                    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f"{path}__{i}"))
-        return "DONE"
-    
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=firebaseHeartbeat, trigger='interval', seconds=HEARTBEAT_TIME)
 scheduler.start()
 
 atexit.register(lambda: scheduler.shutdown())
+
+tcp_thread = threading.Thread(target=tcpServe, args=(post_upload_integration,))
+tcp_thread.daemon = True
+tcp_thread.start()

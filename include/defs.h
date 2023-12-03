@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <Arduino_JSON.h>
 #include <WiFi.h>
+#include <esp_wifi_types.h>
 
 // Function/struct declarations
 struct Network
@@ -86,9 +87,11 @@ extern bool* g_irPattern;
 extern int g_irLength;
 
 // Secrets... we should figure out how to do this without defines
-#define WIFI_SSID ""
-#define WIFI_PASSWORD ""
-#define WEBSERVER_ENDPOINT ""
+#define WIFI_SSID 
+#define WIFI_PASSWORD
+#define TCP_ENDOINT
+#define TCP_PORT
+#define WEBSERVER_ENDPOINT
 
 // Pinouts
 #define IR_LED 15

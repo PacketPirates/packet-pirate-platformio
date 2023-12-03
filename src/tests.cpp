@@ -54,7 +54,7 @@ void uploadTestResult(int networkId, String testname, bool result)
 
 //===== SETTINGS =====//
 #define FILENAME "esp32"
-#define SAVE_INTERVAL 30 //save new file every 30s
+#define SAVE_INTERVAL 1 //save new file every 30s
 
 //===== Run-Time variables =====//
 unsigned long lastTime = 0;
@@ -143,7 +143,7 @@ void tempTest(int networkId)
   openFile();
 
   unsigned long startingTime = millis();
-  while (millis() < startingTime + (30 * 1000))
+  while (millis() < startingTime + (2 * 1000))
     PCAPLoop();
 
   String filename = pcap.filename;
