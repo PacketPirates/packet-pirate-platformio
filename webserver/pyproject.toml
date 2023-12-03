@@ -11,6 +11,7 @@ flask = "^3.0.0"
 firebase-admin = "^6.2.0"
 apscheduler = "^3.10.4"
 flask-socketio = "^5.3.6"
+flask-sock = "^0.7.0"
 
 
 [build-system]

@@ -372,6 +372,24 @@ async = ["asgiref (>=3.2)"]
 dotenv = ["python-dotenv"]
 
 [[package]]
+name = "flask-sock"
+version = "0.7.0"
+description = "WebSocket support for Flask"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "flask-sock-0.7.0.tar.gz", hash = "sha256:e023b578284195a443b8d8bdb4469e6a6acf694b89aeb51315b1a34fcf427b7d"},
+    {file = "flask_sock-0.7.0-py3-none-any.whl", hash = "sha256:caac4d679392aaf010d02fabcf73d52019f5bdaf1c9c131ec5a428cb3491204a"},
+]
+
+[package.dependencies]
+flask = ">=2"
+simple-websocket = ">=0.5.1"
+
+[package.extras]
+docs = ["sphinx"]
+
+[[package]]
 name = "flask-socketio"
 version = "5.3.6"
 description = "Socket.IO integration for Flask applications"
@@ -1230,4 +1248,4 @@ h11 = ">=0.9.0,<1"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "9d4efa3aa3d98296b288d4ee1cac2b5286cb6b39cc671d045d45ca6d3b0ab85b"
+content-hash = "d4a968fa76baa552fb3b0b36801c2d4d0cbf1b79ba48801d03fe50a74853712e"
