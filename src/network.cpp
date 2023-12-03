@@ -238,26 +238,26 @@ void uploadFile(const char* filepath)
   uploadEndpoint.concat(WEBSERVER_ENDPOINT);
   uploadEndpoint.concat("/upload-pcap");
 
+  for (int i = 0; i < numberOfChunks; i++)
+  {
+    Serial.print("Starting chunk: "); Serial.println(i);
+    httpFileUploadRequest(uploadEndpoint, filepath, i, (i == numberOfChunks - 1));
+    delay(100);
+  }
+}
+
+String httpFileUploadRequest(String server, const char* filepath, int chunkOffset, bool finalChunk)
+{
   WiFiClient tcpClient;
   if (!tcpClient.connected())
   {
     if (!tcpClient.connect(TCP_ENDOINT, TCP_PORT))
     {
       Serial.println("ERROR: Cannot connect to TCP endpoint!");
-      return;
+      return "{}";
     }
   }
 
-  for (int i = 0; i < numberOfChunks; i++)
-  {
-    Serial.print("Starting chunk: "); Serial.println(i);
-    httpFileUploadRequest(&tcpClient, uploadEndpoint, filepath, i, (i == numberOfChunks - 1));
-    delay(100);
-  }
-}
-
-String httpFileUploadRequest(WiFiClient* client, String server, const char* filepath, int chunkOffset, bool finalChunk)
-{
   //socketIO.loop();
   String modifiedPath = filepath;
   modifiedPath.replace('/', '_');
@@ -291,7 +291,7 @@ String httpFileUploadRequest(WiFiClient* client, String server, const char* file
   int deviceLen = g_deviceId.length();
   int pathLen = modifiedPath.length();
   
-  int totalBufferSize = FILE_UPLOAD_BUFFER_BYTES + deviceLen + pathLen + 13;
+  int totalBufferSize = FILE_UPLOAD_BUFFER_BYTES + deviceLen + pathLen + 14;
   char intBuffer[sizeof(int)];
   
   for (int i = 0; i < sizeof(int); i++)
@@ -322,26 +322,27 @@ String httpFileUploadRequest(WiFiClient* client, String server, const char* file
     uintBuffer[deviceLen + 3 + i] = modifiedPath.charAt(i);
 
   // 8 bytes for current chunk
-  uintBuffer[deviceLen + 3 + pathLen + 1 ] = chunkOffset / 8;
+  uintBuffer[deviceLen + 3 + pathLen + 0 ] = chunkOffset / 8;
+  uintBuffer[deviceLen + 3 + pathLen + 1] = chunkOffset / 8;
   uintBuffer[deviceLen + 3 + pathLen + 2] = chunkOffset / 8;
   uintBuffer[deviceLen + 3 + pathLen + 3] = chunkOffset / 8;
   uintBuffer[deviceLen + 3 + pathLen + 4] = chunkOffset / 8;
   uintBuffer[deviceLen + 3 + pathLen + 5] = chunkOffset / 8;
   uintBuffer[deviceLen + 3 + pathLen + 6] = chunkOffset / 8;
-  uintBuffer[deviceLen + 3 + pathLen + 7] = chunkOffset / 8;
-  uintBuffer[deviceLen + 3 + pathLen + 8] = (chunkOffset / 8) + chunkOffset % 8;
+  uintBuffer[deviceLen + 3 + pathLen + 7] = (chunkOffset / 8) + chunkOffset % 8;
 
-  uintBuffer[deviceLen + 3 + pathLen + 9] = finalChunk;
+  uintBuffer[deviceLen + 3 + pathLen + 8] = finalChunk;
   
 
   for (int i = 0; i < FILE_UPLOAD_BUFFER_BYTES; i++)
     uintBuffer[i + deviceLen + pathLen + 12] = (uint8_t) buffer[i];
 
-  uintBuffer[totalBufferSize - 2] = 69;
-  uintBuffer[totalBufferSize - 1] = '\n';
+  uintBuffer[totalBufferSize - 3] = 69;
+  uintBuffer[totalBufferSize - 2] = 1;
+  uintBuffer[totalBufferSize - 1] = 69;
   
   Serial.print("Sending buffer of size "); Serial.print(totalBufferSize); Serial.println("...");
-  client->write(uintBuffer, totalBufferSize);
+  tcpClient.write(uintBuffer, totalBufferSize);
   delete[] uintBuffer;
 
   return "{success}";
