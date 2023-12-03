@@ -1,6 +1,7 @@
 import time
 from flask import Flask, request
-from flask_socketio import SocketIO
+#from flask_socketio import SocketIO
+from flask_sock import Sock
 import json
 import os
 import pathlib
@@ -14,7 +15,8 @@ HEARTBEAT_TIME: int = 10
 
 
 app = Flask(__name__)
-socketio = SocketIO(app, binary=True)
+#socketio = SocketIO(app, binary=True, cors_allowed_origins='*', debug=True)
+sock = Sock(app)
 
 
 app.config['UPLOAD_FOLDER'] = 'D:\\Documents\\uploads'
@@ -48,16 +50,26 @@ def firebaseDeleteCollection(collection_ref, size):
     if deleted >= size:
         firebaseDeleteCollection(collection_ref, size)
 
+@sock.route('/echo')
+def echo(ws):
+    while True:
+        data = ws.receive()
+        ws.send(data)
 
-@socketio.on('connect')
-def connect():
-    print('Client connected\n\n\n\n\n\n\n\n\n\n\n')
-    socketio.send('YO WHATS UP')
+# @socketio.on('connect')
+# def connect():
+#     print('Client connected\n\n\n\n\n\n\n\n\n\n\n')
+#     socketio.send('YO WHATS UP')
 
 
-@socketio.on('message')
-def upload_pcap(data):
-    print('Received data: ', data)
+# @socketio.on('disconnect')
+# def connect():
+#     print('Client DISCONNECTED NOOOO\n\n\n\n\n\n\n\n\n\n\n')
+
+
+# @socketio.on('message')
+# def upload_pcap(data):
+#     print('Received data: ', data)
     # if request.method == 'POST':
     #     device_id = request.args.get('device-id')
     #     device_id = device_id.replace('"', '')
