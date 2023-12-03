@@ -24,6 +24,11 @@ SECURITY_ENDPOINT = "http://147.182.195.19:5000"
 app = Flask(__name__)
 sock = Sock(app)
 
+global test_device_id
+global test_id
+test_id = 0
+test_device_id = ""
+
 
 app.config['UPLOAD_FOLDER'] = 'D:\\Documents\\uploads'
 
@@ -42,11 +47,32 @@ def firebaseHeartbeat():
 
 
 def post_upload_integration(upload_path):
+    global test_id
+    global test_device_id
+
     print(upload_path)
     crack_r = requests.post(f'{SECURITY_ENDPOINT}/crackPcap', files={'file': f"@{upload_path}"})
     crack_r_json = crack_r.json()
-    print(crack_r_json)    
-    hash_r = requests.post(f'{SECURITY_ENDPOINT}/getCrackedHash', data={'hash': crack_r_json['hashes'][0]})
+    hash = crack_r_json['hashes'][0]
+    print(crack_r_json)
+    time.sleep(2)
+    hash_r = requests.post(f'{SECURITY_ENDPOINT}/getCrackedHash', json={'hash': hash})
+    while hash_r.status_code != 200:
+        print("Could not get hash! Waiting...")
+        time.sleep(2)
+        hash_r = requests.post(f'{SECURITY_ENDPOINT}/getCrackedHash', json={'hash': hash})
+        print(hash_r.content)
+
+    print(f"ID: {test_device_id}, ch: {test_id}")
+
+    id_str = str(test_id)
+
+    passed_temp = db.collection('devices').document(test_device_id).collection('networks').document(id_str).get().to_dict()
+
+    print(f"dict: {passed_temp}")
+    passed_temp['tests_passed']['decryption'] = True
+    passed_temp['tests_passed']['hash'] = hash_r.json()['result']
+    db.collection('devices').document(test_device_id).collection('networks').document(id_str).set(passed_temp)
 
 
 def firebaseDeleteCollection(collection_ref, size):
@@ -104,10 +130,18 @@ def mode():
 
 @app.route("/get-test", methods=['GET'])
 def get_test():
+    global test_id
+    global test_device_id
     if request.method == 'GET':
         device_id = request.args.get('device-id')
         device_id = device_id.replace('"', '')
         print(f"Getting test mode for device with id: {device_id}")
+        if (device_states[device_id]['test-params']['test_type'] == 'capture'):
+                test_id = device_states[device_id]['test-params']['network_id']
+                test_device_id = device_id
+        # TODO REMOVE
+        test_id = 0
+        test_device_id = device_id
         #return {'id': device_states[device_id]['test-params']['network_id'], 'type': device_states[device_id]['test-params']['test_type']}
         return {'id': 0, 'type': 'capture'}
 
