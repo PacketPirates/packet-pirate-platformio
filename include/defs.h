@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <Arduino_JSON.h>
 #include <WiFi.h>
+#include <esp_wifi_types.h>
 
 // Function/struct declarations
 struct Network
@@ -53,7 +54,7 @@ JSONVar getModeFromWebserver();
 
 String httpGETRequest(String server);
 String httpPOSTRequest(String server, const char* string, bool json);
-String httpFileUploadRequest(String server, const char* filepath, int chunkOffset, bool finalChunk);
+String httpFileUploadRequest(WiFiClient* client, String server, const char* filepath, int chunkOffset, bool finalChunk);
 
 void uploadFile(const char* filepath);
 
@@ -88,6 +89,8 @@ extern int g_irLength;
 // Secrets... we should figure out how to do this without defines
 #define WIFI_SSID ""
 #define WIFI_PASSWORD ""
+#define TCP_ENDOINT ""
+#define TCP_PORT 0
 #define WEBSERVER_ENDPOINT ""
 
 // Pinouts

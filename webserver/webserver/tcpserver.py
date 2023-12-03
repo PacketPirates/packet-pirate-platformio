@@ -1,8 +1,12 @@
 import socketserver
+import socket
 
-class TCPHandler(socketserver.BaseRequestHandler):
+class TCPHandler(socketserver.StreamRequestHandler):
+    next_size = 0
+    mode = 0    
+
     def handle(self):
-        self.data = self.request.recv(4096).strip()
+        self.data = self.rfile.readline().strip()
 
         data = self.data
         print(data)

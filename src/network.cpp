@@ -7,6 +7,8 @@
 
 String g_deviceId;
 
+//SocketIOclient socketIO;
+
 void scanNetworks() {
   Serial.println("Scanning networks...");
   int nets = WiFi.scanNetworks();
@@ -210,6 +212,15 @@ String httpPOSTRequest(String server, const char* string, bool json)
   return payload;
 }
 
+/*void socketIOEvent(socketIOmessageType_t type, uint8_t * payload, size_t length)
+{
+  Serial.print("Socket received message of type "); Serial.print(socketIOmessageType_t(type)); Serial.println(" !");
+  for (int i = 0; i < length; i++)
+    Serial.print(payload[i]);
+
+  Serial.println("\nMessage complete.");
+}*/
+
 void uploadFile(const char* filepath)
 {
   connectWifi();
@@ -227,90 +238,111 @@ void uploadFile(const char* filepath)
   uploadEndpoint.concat(WEBSERVER_ENDPOINT);
   uploadEndpoint.concat("/upload-pcap");
 
+  WiFiClient tcpClient;
+  if (!tcpClient.connected())
+  {
+    if (!tcpClient.connect(TCP_ENDOINT, TCP_PORT))
+    {
+      Serial.println("ERROR: Cannot connect to TCP endpoint!");
+      return;
+    }
+  }
+
   for (int i = 0; i < numberOfChunks; i++)
   {
     Serial.print("Starting chunk: "); Serial.println(i);
-    httpFileUploadRequest(uploadEndpoint, filepath, i, (i == numberOfChunks - 1));
+    httpFileUploadRequest(&tcpClient, uploadEndpoint, filepath, i, (i == numberOfChunks - 1));
+    delay(100);
   }
 }
 
-String httpFileUploadRequest(String server, const char* filepath, int chunkOffset, bool finalChunk)
+String httpFileUploadRequest(WiFiClient* client, String server, const char* filepath, int chunkOffset, bool finalChunk)
 {
-  int httpResponseCode;
-  String payload = "{}"; 
- 
+  //socketIO.loop();
+  String modifiedPath = filepath;
+  modifiedPath.replace('/', '_');
+
+  char buffer[FILE_UPLOAD_BUFFER_BYTES];
+  // 0 our buffer so we can leave ending 0's
+  for (int i = 0; i < FILE_UPLOAD_BUFFER_BYTES; i++)
+    buffer[i] = 0;
+
+  File f = LittleFS.open(filepath);
+  if (!f)
   {
-    WiFiClient client;
-    HTTPClient http;
-
-    String modifiedPath = filepath;
-    modifiedPath.replace('/', '_');
-
-    String serverStr = server;
-
-    serverStr.concat("?device-id=");
-    serverStr.concat(g_deviceId);
-    serverStr.concat("&path=");
-    serverStr.concat(modifiedPath);
-    serverStr.concat("&offset=");
-    serverStr.concat(chunkOffset);
-    serverStr.concat("&final=");
-    serverStr.concat(finalChunk);
-
-    char buffer[FILE_UPLOAD_BUFFER_BYTES];
-    // 0 our buffer so we can leave ending 0's
-    for (int i = 0; i < FILE_UPLOAD_BUFFER_BYTES; i++)
-      buffer[i] = 0;
-
-    File f = LittleFS.open(filepath);
-    if (!f)
-    {
-      Serial.println("ERROR: Failed to open LittleFS file for reading in upload!");
-      return "{}";
-    }
-
-    f.seek(chunkOffset * FILE_UPLOAD_BUFFER_BYTES, SeekSet);
-    int bytesRead = f.readBytes(buffer, FILE_UPLOAD_BUFFER_BYTES);
-    if (bytesRead < 0) 
-    {
-      Serial.println("ERROR: Unable to read bytes from file in upload!");
-      return "{}";
-    }
-
-    f.close();
-
-    // There needs to be a more efficient way of doing this because
-    // the memory usage this entails makes chunks so much smaller than they
-    // could be
-    Serial.println("Converting buffer...");
-    uint8_t uintBuffer[FILE_UPLOAD_BUFFER_BYTES];
-    for (int i = 0; i < FILE_UPLOAD_BUFFER_BYTES; i++)
-      uintBuffer[i] = (uint8_t) buffer[i];
-
-    http.begin(client, serverStr.c_str());
-    Serial.print("Making POST request to "); Serial.println(serverStr);
-    
-    http.addHeader("Content-Type", "application/octet-stream");
-
-    // Send HTTP POST request
-    httpResponseCode = http.POST(uintBuffer, FILE_UPLOAD_BUFFER_BYTES);
-    
-    if (httpResponseCode>0) {
-      Serial.print("HTTP Response code: ");
-      Serial.println(httpResponseCode);
-      payload = http.getString();
-    }
-    else {
-      Serial.print("Error code: ");
-      Serial.println(httpResponseCode);
-    }
-
-    // Free resources
-    http.end();
+    Serial.println("ERROR: Failed to open LittleFS file for reading in upload!");
+    return "{}";
   }
 
-  if (httpResponseCode != 200)
-    httpFileUploadRequest(server, filepath, chunkOffset, finalChunk);
+  f.seek(chunkOffset * FILE_UPLOAD_BUFFER_BYTES, SeekSet);
+  int bytesRead = f.readBytes(buffer, FILE_UPLOAD_BUFFER_BYTES);
+  if (bytesRead < 0) 
+  {
+    Serial.println("ERROR: Unable to read bytes from file in upload!");
+    return "{}";
+  }
 
-  return payload;
+  f.close();
+
+  // There needs to be a more efficient way of doing this because
+  // the memory usage this entails makes chunks so much smaller than they
+  // could be
+  Serial.println("Creating buffer...");
+  int deviceLen = g_deviceId.length();
+  int pathLen = modifiedPath.length();
+  
+  int totalBufferSize = FILE_UPLOAD_BUFFER_BYTES + deviceLen + pathLen + 13;
+  char intBuffer[sizeof(int)];
+  
+  for (int i = 0; i < sizeof(int); i++)
+  {
+    intBuffer[i] = totalBufferSize / sizeof(int);
+    if (i == sizeof(int) - 1)
+      intBuffer[i] += totalBufferSize % sizeof(int);
+  }
+
+  uint8_t* uintBuffer = new uint8_t[totalBufferSize];
+
+  uintBuffer[0] = (uint8_t) deviceLen;
+  for (int i = 0; i < deviceLen; i++)
+    uintBuffer[i + 1] = g_deviceId.charAt(i);
+  
+  if (pathLen > 255)
+  {
+    uintBuffer[deviceLen + 1] = (uint8_t) pathLen - 255;
+    uintBuffer[deviceLen + 2] = 255;
+  }
+  else
+  {
+    uintBuffer[deviceLen + 1] = 0;
+    uintBuffer[deviceLen + 2] = (uint8_t) pathLen;
+  }
+
+  for (int i = 0; i < pathLen; i++)
+    uintBuffer[deviceLen + 3 + i] = modifiedPath.charAt(i);
+
+  // 8 bytes for current chunk
+  uintBuffer[deviceLen + 3 + pathLen + 1 ] = chunkOffset / 8;
+  uintBuffer[deviceLen + 3 + pathLen + 2] = chunkOffset / 8;
+  uintBuffer[deviceLen + 3 + pathLen + 3] = chunkOffset / 8;
+  uintBuffer[deviceLen + 3 + pathLen + 4] = chunkOffset / 8;
+  uintBuffer[deviceLen + 3 + pathLen + 5] = chunkOffset / 8;
+  uintBuffer[deviceLen + 3 + pathLen + 6] = chunkOffset / 8;
+  uintBuffer[deviceLen + 3 + pathLen + 7] = chunkOffset / 8;
+  uintBuffer[deviceLen + 3 + pathLen + 8] = (chunkOffset / 8) + chunkOffset % 8;
+
+  uintBuffer[deviceLen + 3 + pathLen + 9] = finalChunk;
+  
+
+  for (int i = 0; i < FILE_UPLOAD_BUFFER_BYTES; i++)
+    uintBuffer[i + deviceLen + pathLen + 12] = (uint8_t) buffer[i];
+
+  uintBuffer[totalBufferSize - 2] = 69;
+  uintBuffer[totalBufferSize - 1] = '\n';
+  
+  Serial.print("Sending buffer of size "); Serial.print(totalBufferSize); Serial.println("...");
+  client->write(uintBuffer, totalBufferSize);
+  delete[] uintBuffer;
+
+  return "{success}";
 }
