@@ -52,6 +52,7 @@ def post_upload_integration(upload_path):
 
     print(upload_path)
     crack_r = requests.post(f'{SECURITY_ENDPOINT}/crackPcap', files={'file': f"@{upload_path}"})
+    print(crack_r.text)
     crack_r_json = crack_r.json()
     hash = crack_r_json['hashes'][0]
     print(crack_r_json)
@@ -63,6 +64,7 @@ def post_upload_integration(upload_path):
         hash_r = requests.post(f'{SECURITY_ENDPOINT}/getCrackedHash', json={'hash': hash})
         print(hash_r.content)
 
+    print(hash_r.text)
     print(f"ID: {test_device_id}, ch: {test_id}")
 
     id_str = str(test_id)
