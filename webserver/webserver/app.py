@@ -139,11 +139,7 @@ def get_test():
         if (device_states[device_id]['test-params']['test_type'] == 'capture'):
                 test_id = device_states[device_id]['test-params']['network_id']
                 test_device_id = device_id
-        # TODO REMOVE
-        test_id = 0
-        test_device_id = device_id
-        #return {'id': device_states[device_id]['test-params']['network_id'], 'type': device_states[device_id]['test-params']['test_type']}
-        return {'id': 0, 'type': 'capture'}
+        return {'id': device_states[device_id]['test-params']['network_id'], 'type': device_states[device_id]['test-params']['test_type']}
 
 
 @app.route("/unswitch", methods=['POST'])
